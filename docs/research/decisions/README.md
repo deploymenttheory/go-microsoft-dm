@@ -15,7 +15,7 @@ cross-reference before the files exist; a reserved row names the phase that writ
 | 0002 | [Pinned references and re-check triggers](0002-pinned-references.md) | 0 |
 | 0003 | [Reference projects and dependency policy](0003-reference-projects-and-dependency-policy.md) | 0 |
 | 0004 | [Go 1.27 baseline and foundation contracts](0004-go-baseline-and-foundation-contracts.md) | 1 |
-| 0005 | SyncML message model and XML policy (reserved) | 2 |
+| 0005 | [SyncML message model and XML policy](0005-syncml-message-model-and-xml-policy.md) | 2 |
 | 0006 | Schema generator over DDF v2 (reserved) | 3 |
 | 0007 | Relationship to go-sdk-windowscsp (reserved) | 3 |
 | 0008 | Enrollment protocol and the provisioning document (reserved) | 4 |
