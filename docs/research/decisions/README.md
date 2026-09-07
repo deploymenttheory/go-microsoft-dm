@@ -21,9 +21,9 @@ cross-reference before the files exist; a reserved row names the phase that writ
 | 0008 | [Enrollment protocol and the provisioning document](0008-enrollment-protocol-and-provisioning-document.md) | 4 |
 | 0009 | [WSTEP CA and CSR handling](0009-wstep-ca-and-csr-handling.md) | 4 |
 | 0010 | [Storage interfaces and the contract suite](0010-storage-interfaces-and-contract-suite.md) | 4 |
-| 0011 | Management session engine (reserved) | 5 |
-| 0012 | Command queue, results and retention (reserved) | 5 |
-| 0013 | Scope and the user channel (reserved) | 5 |
+| 0011 | [Management session engine](0011-management-session-engine.md) | 5 |
+| 0012 | [Command queue, results and retention](0012-command-queue-results-and-retention.md) | 5 |
+| 0013 | [Scope and the user channel](0013-scope-and-user-channel.md) | 5 |
 | 0014 | SQL storage backends (reserved) | 6 |
 | 0015 | Reference server roles and configuration (reserved) | 6 |
 | 0016 | `dmctl` structure (reserved) | 6 |
