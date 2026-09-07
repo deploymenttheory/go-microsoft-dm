@@ -48,3 +48,12 @@ __pycache__/
 *.exe
 *.dylib
 *.so
+# go-microsoft-dm
+cover/
+*.sarif
+third_party/refs/
+third_party/specs/*
+!third_party/specs/MANIFEST.json
+
+# Workspace checksum file; go.work itself is committed.
+go.work.sum

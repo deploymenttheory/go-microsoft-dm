@@ -1,0 +1,13 @@
+# Packages exempt from the per-package coverage gate. One regular expression per
+# line, matched against the package import path. Each entry needs a reason.
+# Exempt packages are still measured and reported, just not gated.
+
+# Wiring-only binaries; logic lives in the packages they compose, which are gated.
+^github.com/deploymenttheory/go-microsoft-dm/cmd/
+^github.com/deploymenttheory/go-microsoft-dm/server/cmd/
+
+# Test helpers are exercised by the suites they serve.
+^github.com/deploymenttheory/go-microsoft-dm/testpki$
+^github.com/deploymenttheory/go-microsoft-dm/storage/storagetest$
+^github.com/deploymenttheory/go-microsoft-dm/simulator$
+^github.com/deploymenttheory/go-microsoft-dm/telemetry/telemetrytest$

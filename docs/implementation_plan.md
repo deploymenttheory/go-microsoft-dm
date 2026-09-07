@@ -1,4 +1,4 @@
-# go-oma-dm implementation plan
+# go-microsoft-dm implementation plan
 
 Plan date: 2026-09-07. Derived from [docs/research.md](research.md) (research date 2026-09-06),
 read in full and followed in section order. Every phase cites the research sections it is built
@@ -29,8 +29,8 @@ to this plan too: fix the plan, cite the date.
 
 | Phase | Title | Status | Notes |
 |---|---|---|---|
-| 0 | Repository bootstrap and governance | not started | |
-| 1 | Foundation packages | not started | |
+| 0 | Repository bootstrap and governance | done (2026-09-07) | Module path is `go-microsoft-dm`, matching the repository |
+| 1 | Foundation packages | done (2026-09-07) | `testpki.WindowsCSR` reproduces the Fleet-documented `!` subject |
 | 2 | SyncML wire model | not started | |
 | 3 | CSP schema generated from DDF v2 | not started | |
 | 4 | Enrollment: MS-MDE2 with XCEP and WSTEP | not started | |
@@ -156,8 +156,8 @@ Inputs: research Purpose, section 0, section 1 (all pins), section 3 (clone list
 
 Deliverables:
 
-1. `go.mod` (`module github.com/deploymenttheory/go-oma-dm`, `go 1.27.0`), `server/go.mod`
-   (`.../go-oma-dm/server` with a `replace` to `..`), `go.work` using both.
+1. `go.mod` (`module github.com/deploymenttheory/go-microsoft-dm`, `go 1.27.0`), `server/go.mod`
+   (`.../go-microsoft-dm/server` with a `replace` to `..`), `go.work` using both.
 2. `Makefile` with the go-apple-dm target set adapted: `help`, `tools`, `generate`, `verify`,
    `lint`, `test`, `test-storage`, `test-conformance`, `test-e2e`, `test-conformance-guest`
    (new; Phase 7), `fuzz-smoke`, `fuzz`, `coverage`, `vuln`, `refs`, `refs-activity`, `specs`,
@@ -738,7 +738,7 @@ Design:
   app" constraint (question 8 stays open; the constraint is recorded); a `dmctl entra setup`
   helper that creates the `mobilityManagementPolicy` (beta) with `discoveryUrl`, `termsOfUseUrl`,
   `complianceUrl`.
-- Bulk provisioning packages: document go-oma-dm as a valid `OnPremise` and `Certificate` target;
+- Bulk provisioning packages: document go-microsoft-dm as a valid `OnPremise` and `Certificate` target;
   a `dmctl ppkg` builder is optional (local-mdm shows the format).
 - The Entra "Disable MDM enrollment when adding work or school account" toggle and the Conditional
   Access partner limits (Windows not supported) are recorded as deployment constraints.
@@ -1022,7 +1022,7 @@ From research Purpose and section 10 "Not covered": Windows 10 and non-desktop e
 telecom and IoT OMA-DM; Windows 365 and AVD multi-session policy beyond parsing; Intune-internal
 services (MMP-C hosting, the EPM agent, device inventory agent, IC3); WIP and MAM-only enrollment;
 the wider Graph Intune API; Autopilot v1 registration, self-deploying, pre-provisioning, device
-preparation v2 and device association (all Intune-gated today; go-oma-dm participates only as the
+preparation v2 and device association (all Intune-gated today; go-microsoft-dm participates only as the
 Entra auto-enrollment target, recorded in Phase 10). Watch items: Autopilot device preparation's
 promised third-party support; any Microsoft statement on WNS credentials for DMClient.
 
