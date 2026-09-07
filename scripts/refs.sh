@@ -9,6 +9,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="$ROOT/third_party/refs"
 mkdir -p "$DEST"
+# A go.mod here makes every clone a foreign module, so ./... in the library
+# never descends into a reference that ships without its own go.mod.
+printf 'module third_party.invalid/refs\n\ngo 1.27.0\n' > "$DEST/go.mod"
 REPOS=(
   fleetdm/fleet
   Malcolm/local-mdm
