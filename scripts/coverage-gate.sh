@@ -87,9 +87,30 @@ while read -r pkg pct; do
   printf "%-70s %8s%s\n" "$pkg" "$pct" "$mark"
 done < "$pkg_report"
 
-total="$(awk '$1 == "TOTAL" {print $2}' "$pkg_report")"
-echo "overall: ${total}% (minimum ${MIN}%)"
-if (( $(echo "$total < $MIN" | bc -l) )); then
+# The overall figure is computed over the gated packages only: exempt
+# packages (generated schema tables, test scaffolding, wiring-only binaries)
+# are measured and listed above but do not move the number the gate enforces.
+pat_file="$(mktemp)"
+printf '%s\n' "${exempt_patterns[@]:-}" > "$pat_file"
+gated_total="$(awk -v module="$MODULE" -v patfile="$pat_file" '
+  BEGIN { n = 0; while ((getline line < patfile) > 0) if (line != "") pats[++n] = line; close(patfile) }
+  NR == 1 { next }
+  {
+    split($1, a, ":"); file = a[1]
+    m = split(file, parts, "/"); pkg = ""
+    for (i = 1; i < m; i++) pkg = pkg (i > 1 ? "/" : "") parts[i]
+    skip = 0
+    for (j = 1; j <= n; j++) if (pats[j] != "" && pkg ~ pats[j]) skip = 1
+    if (skip) next
+    stmts = $2; count = $3
+    gtotal += stmts
+    if (count > 0) gcovered += stmts
+  }
+  END { printf "%.2f", (gtotal ? 100 * gcovered / gtotal : 0) }' "$merged")"
+rm -f "$pat_file"
+all_total="$(awk '$1 == "TOTAL" {print $2}' "$pkg_report")"
+echo "overall (gated packages): ${gated_total}% (minimum ${MIN}%); all packages including exempt: ${all_total}%"
+if (( $(echo "$gated_total < $MIN" | bc -l) )); then
   echo "coverage-gate: overall coverage below ${MIN}%" >&2; fail=1
 fi
 

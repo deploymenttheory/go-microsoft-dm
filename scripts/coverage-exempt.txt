@@ -11,3 +11,10 @@
 ^github.com/deploymenttheory/go-microsoft-dm/storage/storagetest$
 ^github.com/deploymenttheory/go-microsoft-dm/simulator$
 ^github.com/deploymenttheory/go-microsoft-dm/telemetry/telemetrytest$
+
+# Generated from the pinned DDF bundle (decision record 0006); every URI is
+# exercised by schema/registry's conformance test, which resolves each node,
+# but the per-node URI functions are data, not logic.
+^github.com/deploymenttheory/go-microsoft-dm/schema/csp/[a-z0-9]+$
+^github.com/deploymenttheory/go-microsoft-dm/schema/policy/
+^github.com/deploymenttheory/go-microsoft-dm/schema/registry$

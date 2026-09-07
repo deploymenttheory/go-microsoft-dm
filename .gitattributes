@@ -6,3 +6,5 @@
 
 *.json text eol=lf
 *.zip binary
+schema/**/*.gen.go linguist-generated=true
+schema/EXPORTED_IDENTIFIERS.lock linguist-generated=true
