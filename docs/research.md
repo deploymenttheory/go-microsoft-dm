@@ -915,10 +915,11 @@ WS-Trust, or SyncML library; every project hand-rolls the XML with the language'
 - Covers: See 1.4. `mdmdiagnosticstool.exe -area "DeviceEnrollment;DeviceProvisioning;Autopilot" -zip out.zip`; `MDMDiagHtmlReport.html` (management URL, MDM server device ID, certs, policies), `MdmDiagReport_RegistryDump.reg`, `.evtx`; Event Viewer channel DeviceManagement-Enterprise-Diagnostics-Provider Admin and Debug; remote collection via the DiagnosticLog CSP.
 - Notes: The first thing to read when an enrollment against go-oma-dm fails.
 
-#### Windows 11 ARM64 test VMs on Apple silicon
-- Source: <https://smbtothecloud.com/virtualize-windows-arm-with-macos-for-intune-testing/> · Gannon Novak · blog · 2026-04-01 · Active; <https://www.oddsandendpoints.co.uk/posts/macos-windows-autopilot-utm/> · Nick Benton · blog · 2024-06-03 · Maintenance
-- Covers: Parallels (paid, easiest), VMware Fusion (free; the wizard "Get Windows from Microsoft" pulls the ARM ISO, 25H2 current), UTM (free; get the ARM ISO via CrystalFetch). Select UEFI with Secure Boot at VM creation so the guest presents a TPM. A generic QEMU VM has no serial number, so the Autopilot hardware hash fails; add one via UTM QEMU args `-smbios type=1,serial=XXXXXXXX`.
-- Notes: Fleet's `docs/Contributing/product-groups/mdm/windows-autopilot.md` recommends Proxmox (x86_64 KVM) over ARM VMs for Autopilot, and notes a missing Entra ID P1 licence shows as an empty MDM URL in `dsregcmd /status` with a silent enrollment failure.
+#### Test environments: guestweave (same organisation)
+- Repo: <https://github.com/deploymenttheory/guestweave-cli-windows> · Go · MIT · Active (last push 2026-09-01; pre-alpha) · 0 stars; <https://github.com/deploymenttheory/guestweave-cli-macos> · Go · MIT · Active (last push 2026-09-03) · 0 stars; <https://github.com/deploymenttheory/guestweave-agent> · Go · MIT · Active (last push 2026-09-01)
+- Note: all three are private repositories on 2026-09-07; they resolve only with an authenticated GitHub session, so the link check reports them as 404.
+- Implements: VM lifecycle for Windows 11 guests (create, run, snapshot, clone, suspend, console), unattended Windows install from Microsoft retail media, an in-guest agent driven from the host, and an authenticated HTTP plus MCP API for driving all of it from tests. Test environment only; no MDM protocol code.
+- Notes: The project's test environments come from these two CLIs; no third-party hypervisor tooling is needed. On a Windows host, `weave create win --from-windows pro-25h2` downloads Microsoft's current multi-edition x64 retail ISO, attaches an answer file on a side volume, and installs unattended into a local admin (`weave`/`weave`) with OOBE skipped, OpenSSH enabled and a completion marker; `latest` tracks whatever Microsoft's consumer download serves (25H2 today, 26H2 once it reaches that channel), and `--from-windows <iso>` takes a Release Preview ISO by path. The guest runs on the Host Compute Service in guest-isolation mode and gets a real TPM 2.0 and Secure Boot by default (`Get-Tpm` reports MSFT, `Confirm-SecureBootUEFI` True, BitLocker turns itself on), so the Windows 11 install checks are satisfied rather than bypassed; `--no-vtpm` gives a plain VM. The vTPM state lives in the guest-state file and travels with snapshots and clones, so a snapshot of a clean, un-enrolled guest can be reverted to reset an enrollment without breaking BitLocker. `weave serve` exposes create, start, stop, snapshot revert, IP resolution, an MJPEG console and agent calls over HTTP (`/weave/vms/...`, bearer token, OpenAPI at `/openapi.json`) or MCP, and `weave agent call <vm> <tool>` runs tools inside the guest; that is the seam an e2e harness uses to enroll a real Windows client against go-oma-dm, capture SyncML with SyncMLViewer, and revert. On a macOS host, Windows on ARM guests run on a bespoke Hypervisor.framework VMM (the Virtualization framework cannot boot them); the guest agent handles Windows shutdown and restart, but the macOS CLI's `create` currently takes only `--from-ipsw` or `--linux`, and a vTPM for Windows guests is still under discovery (`discovery/vtpm`), so Windows 11 enrollment work should run on the Windows host until that lands. Two limits carry over from Microsoft: enrollment attestation is unsupported on any VM, vTPM included, so attestation verification needs a physical device; and the unattended profile skips OOBE, so Autopilot and OOBE-time enrollment flows need the retail or noprompt media profile instead.
 
 #### Authoring helpers
 - <https://github.com/getprimo/csp-builder> (TypeScript, MIT, 2026) and <https://github.com/Weatherlights/PolicyApplicator-for-Microsoft-Intune> (PowerShell, 26 stars, 2025-09) convert ADMX, ini, json, or registry into OMA-URI SyncML. Useful for generating realistic test payloads.
@@ -973,7 +974,6 @@ same wire protocol go-oma-dm must speak, but it is marked Intune-gated.
 - <https://www.tbone.se/2025/03/17/be-prepared-for-windows-declared-configuration-in-intune/> · Torbjörn Granheden · blog · 2025-03-17 (updated 2026-04-01) · Active · Intune-gated.
 - <https://mikemdm.de/2024/09/15/troubleshooting-intune-endpoint-privilege-management/> · blog · 2024-09-15 · Active · Intune-gated. Dual enrollment, the EPM agent path, `HKLM\SOFTWARE\Microsoft\EPMAgent\Policies`.
 - <https://www.vansurksum.com/2021/05/25/mdm-policy-processing-on-windows-10-with-microsoft-endpoint-manager-a-closer-look/> · Kenneth van Surksum · blog · 2021-05-25 · Historical · yes. The 8-hour interval, `HKLM\SOFTWARE\Microsoft\PolicyManager\current\device`, the diagnostics provider logs.
-- <https://smbtothecloud.com/virtualize-windows-arm-with-macos-for-intune-testing/> · Gannon Novak · blog · 2026-04-01 · Active · yes. See section 5.
 
 #### Marcos Oviedo: Windows Agentless C2, (Ab)using the MDM Client Stack
 - Source: whitepaper <https://github.com/marcosd4h/presentations/blob/main/Blackhat/2023/Whitepaper_Windows_Agentless_C2_Abusing_the_MDM_Client_Stack.pdf> (Black Hat USA, 2023-08-09, with Zach Wasserman); slides <https://typhooncon.com/wp-content/uploads/2024/08/Abusing_the_MDM_Client_Stack_Typhooncon_2024-2.pdf> (2024); Ekoparty 2023 talk <https://www.youtube.com/watch?v=LEAtGGEd1aU> · talk · Active · Third-party MDM: yes (it is a rogue third-party MDM server)
@@ -1092,6 +1092,12 @@ and the decision records, not decisions themselves.
   the AIK claim, certificate and public key arrive as AdditionalContext items. None of the open
   servers verify them. Verifying the AIK chain with go-attestation would be a genuine improvement,
   and it mirrors go-apple-dm's Managed Device Attestation work.
+- Test environments are solved in-house. guestweave on a Windows host gives a Windows 11 guest with
+  a real TPM 2.0 and Secure Boot, OOBE skipped, SSH and an in-guest agent, snapshots that carry the
+  TPM state, and an HTTP and MCP API to drive it, so go-oma-dm's e2e tier can enroll a real client,
+  capture the SyncML, and revert to a clean snapshot without any third-party hypervisor. The
+  simulator remains the unit-test client; guestweave is the conformance client. Attestation checks
+  are the one thing that still needs physical hardware.
 - Every open server hand-rolls the SOAP and SyncML XML, and two of them vendor Go's x509 CSR parser
   to survive Windows's PrintableString subjects. The typed message model in Mattrax's Rust crates
   (one type per verb, one crate per protocol) is the design to follow in Go; the vendored CSR parser
@@ -1166,6 +1172,10 @@ and the decision records, not decisions themselves.
    restriction without a process.
 9. Whether Microsoft will publish anything new for MDM in 26H2 between Release Preview and GA. Every
    page checked was silent.
+
+Questions 1, 2, 4, 5 and 6 are closed by a guestweave Windows 11 guest (section 5) running
+SyncMLViewer against a go-oma-dm test server; none of them needs physical hardware. Attestation
+behaviour behind question 1 does.
 
 ### Not covered by this document
 
