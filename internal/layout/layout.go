@@ -1,6 +1,7 @@
 package layout
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -48,7 +49,11 @@ func LoadRepo(root string) (*Graph, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := &Graph{Module: lib.Module, Imports: map[string][]string{}, TestImports: map[string][]string{}}
+	out := &Graph{
+		Module:      lib.Module,
+		Imports:     map[string][]string{},
+		TestImports: map[string][]string{},
+	}
 	for pkg, edges := range lib.Imports {
 		out.Imports[pkg] = edges
 		out.TestImports[pkg] = lib.TestImports[pkg]
@@ -96,7 +101,12 @@ func Load(dir string) (*Graph, error) {
 	if err != nil {
 		return nil, err
 	}
-	g := &Graph{Module: module, Imports: map[string][]string{}, TestImports: map[string][]string{}, External: map[string][]string{}}
+	g := &Graph{
+		Module:      module,
+		Imports:     map[string][]string{},
+		TestImports: map[string][]string{},
+		External:    map[string][]string{},
+	}
 	g.parse(out)
 	if len(g.Imports) == 0 {
 		return nil, fmt.Errorf("%w: no packages found in %s", ErrGoList, dir)
@@ -138,7 +148,7 @@ func (g *Graph) parse(out string) {
 }
 
 func run(dir string, args ...string) (string, error) {
-	cmd := exec.Command("go", args...)
+	cmd := exec.CommandContext(context.Background(), "go", args...)
 	cmd.Dir = dir
 	// Each module is read on its own terms. A workspace would merge them and
 	// hide which module a package belongs to, which is the question here.

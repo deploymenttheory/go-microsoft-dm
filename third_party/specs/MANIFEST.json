@@ -1,0 +1,159 @@
+{
+  "_comment": "Pinned specifications. make specs downloads each url into this directory (gitignored) and checks sha256. Revision and date are taken from the document itself; see docs/research.md sections 1.1 to 1.3 and decision record 0002.",
+  "specs": [
+    {
+      "name": "OMA-TS-DM_Protocol-V1_2_1-20080617-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2_1-20080617-A/OMA-TS-DM_Protocol-V1_2_1-20080617-A.pdf",
+      "revision": "V1_2_1-20080617-A",
+      "date": "2008-06-17",
+      "sha256": "214d9ae7dc815a588637c59d201b6c2df1af5d4c8be3b2813bb59484974c55a9"
+    },
+    {
+      "name": "OMA-TS-DM_RepPro-V1_2_1-20080617-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2_1-20080617-A/OMA-TS-DM_RepPro-V1_2_1-20080617-A.pdf",
+      "revision": "V1_2_1-20080617-A",
+      "date": "2008-06-17",
+      "sha256": "de3dd66d83ae44c367e024f514d1ac1b8b663285b4329039d281f70c8edaa31a"
+    },
+    {
+      "name": "OMA-TS-DM_Notification-V1_2_1-20080617-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2_1-20080617-A/OMA-TS-DM_Notification-V1_2_1-20080617-A.pdf",
+      "revision": "V1_2_1-20080617-A",
+      "date": "2008-06-17",
+      "sha256": "cb3b6cd5cd006118c639fbf772b1f3b219727aa3fa4480a1ad57c8dc96378aa2"
+    },
+    {
+      "name": "OMA-TS-DM_TND-V1_2_1-20080617-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2_1-20080617-A/OMA-TS-DM_TND-V1_2_1-20080617-A.pdf",
+      "revision": "V1_2_1-20080617-A",
+      "date": "2008-06-17",
+      "sha256": "97aaed158717edcf5664f103b5684d8182cd611ed7f3523005a9cee569e297bb"
+    },
+    {
+      "name": "OMA-TS-DM_StdObj-V1_2_1-20080617-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2_1-20080617-A/OMA-TS-DM_StdObj-V1_2_1-20080617-A.pdf",
+      "revision": "V1_2_1-20080617-A",
+      "date": "2008-06-17",
+      "sha256": "8ed94a9eb04b670f5638b01238a26a6a6f78b8468debb171ab7ca5b4abeaae9f"
+    },
+    {
+      "name": "OMA-TS-DM_Security-V1_2_1-20080617-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2_1-20080617-A/OMA-TS-DM_Security-V1_2_1-20080617-A.pdf",
+      "revision": "V1_2_1-20080617-A",
+      "date": "2008-06-17",
+      "sha256": "36390c84d28eb84ba1db5fce1bef0dc5e43655f39b626f1bed803e321d107ef2"
+    },
+    {
+      "name": "OMA-TS-DM_Bootstrap-V1_2_1-20080617-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2_1-20080617-A/OMA-TS-DM_Bootstrap-V1_2_1-20080617-A.pdf",
+      "revision": "V1_2_1-20080617-A",
+      "date": "2008-06-17",
+      "sha256": "a26983b77c6991fa348215b5beb6f2e5dbe504fff9a57c36128bdcf4931542e8"
+    },
+    {
+      "name": "OMA-ERELD-DM-V1_2_1-20080617-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2_1-20080617-A/OMA-ERELD-DM-V1_2_1-20080617-A.pdf",
+      "revision": "V1_2_1-20080617-A",
+      "date": "2008-06-17",
+      "sha256": "2a8ce1d1d433c3a401787d36a8f2468ef48a2df7fc7f071209556c4e1bb9ac8b"
+    },
+    {
+      "name": "OMA-SUP-ac_w7_dm-V1_0_1-20080617-A.txt",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2_1-20080617-A/OMA-SUP-ac_w7_dm-V1_0_1-20080617-A.txt",
+      "revision": "V1_0_1-20080617-A",
+      "date": "2008-06-17",
+      "sha256": "1197e6590f276958e0d7c7dd266ddb9044ec58371cd9f44a1633e56a6703febb"
+    },
+    {
+      "name": "OMA-SUP-dtd_dm_ddf-V1_2-20070209-A.dtd",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2_1-20080617-A/OMA-SUP-dtd_dm_ddf-V1_2-20070209-A.dtd",
+      "revision": "V1_2-20070209-A",
+      "date": "2007-02-09",
+      "sha256": "a1e6b03792db9f9053ef8f8f43bac0285ecd8ec190a0a2120581b8187f450131"
+    },
+    {
+      "name": "OMA-TS-DM_Protocol-V1_2-20070209-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/DM/V1_2-20070209-A/OMA-TS-DM_Protocol-V1_2-20070209-A.pdf",
+      "revision": "V1_2-20070209-A",
+      "date": "2007-02-09",
+      "sha256": "3853b99efa3f7c7e983af15b5ef81eaac94cc8717ef9df15d79911afa239f16f"
+    },
+    {
+      "name": "OMA-TS-SyncML-RepPro-V1_2_2-20090724-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/Common/V1_2_2-20090724-A/OMA-TS-SyncML-RepPro-V1_2_2-20090724-A.pdf",
+      "revision": "V1_2_2-20090724-A",
+      "date": "2009-07-24",
+      "sha256": "675071d1773ad98507379f4c1608e31ced8e56c30bf5ea3f496f2f9a46fda6a9"
+    },
+    {
+      "name": "OMA-SUP-DTD_SyncML_RepPro-V1_2-20070221-A.txt",
+      "url": "https://www.openmobilealliance.org/release/Common/V1_2_2-20090724-A/OMA-SUP-DTD_SyncML_RepPro-V1_2-20070221-A.txt",
+      "revision": "V1_2-20070221-A",
+      "date": "2007-02-21",
+      "sha256": "d29f89ab1c53d0589139f84dd9a5aed0011b8faf66f2e92864d7d4b7f0c2bc97"
+    },
+    {
+      "name": "OMA-TS-SyncML_MetaInfo-V1_2_2-20090724-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/Common/V1_2_2-20090724-A/OMA-TS-SyncML_MetaInfo-V1_2_2-20090724-A.pdf",
+      "revision": "V1_2_2-20090724-A",
+      "date": "2009-07-24",
+      "sha256": "853a1baeaec32200c8de9bd01afbd347f90bda1e9cc81ad13411563780154a84"
+    },
+    {
+      "name": "OMA-SUP-DTD_SyncML_MetaInfo-V1_2-20070221-A.txt",
+      "url": "https://www.openmobilealliance.org/release/Common/V1_2_2-20090724-A/OMA-SUP-DTD_SyncML_MetaInfo-V1_2-20070221-A.txt",
+      "revision": "V1_2-20070221-A",
+      "date": "2007-02-21",
+      "sha256": "8fbfe2b9248cdab48c3acbb7c8401058eca3320428057bcafd65c6df5c5902fd"
+    },
+    {
+      "name": "OMA-TS-SyncML_HTTPBinding-V1_2_1-20070611-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/Common/V1_2_2-20090724-A/OMA-TS-SyncML_HTTPBinding-V1_2_1-20070611-A.pdf",
+      "revision": "V1_2_1-20070611-A",
+      "date": "2007-06-11",
+      "sha256": "07b7a5650caa9e6e99198269b12ba4b061601620b517fc703badde78bc511d83"
+    },
+    {
+      "name": "OMA-ERELD-SyncML_Common-V1_2_2-20090724-A.pdf",
+      "url": "https://www.openmobilealliance.org/release/Common/V1_2_2-20090724-A/OMA-ERELD-SyncML_Common-V1_2_2-20090724-A.pdf",
+      "revision": "V1_2_2-20090724-A",
+      "date": "2009-07-24",
+      "sha256": "55887d2c1f7e6aaeee3f256d009b44ababef0c60889c53415dcec65cbcf4cd4d"
+    },
+    {
+      "name": "MS-MDE2.pdf",
+      "url": "https://winprotocoldoc.z19.web.core.windows.net/MS-MDE2/%5bMS-MDE2%5d.pdf",
+      "revision": "19.0",
+      "date": "2026-08-11",
+      "sha256": "2beb94ede0ad88d1f15df7cd1f9065cfd263acb4d7773d408e7bd07ccece0660"
+    },
+    {
+      "name": "MS-MDM.pdf",
+      "url": "https://winprotocoldoc.z19.web.core.windows.net/MS-MDM/%5bMS-MDM%5d.pdf",
+      "revision": "15.0",
+      "date": "2024-04-23",
+      "sha256": "b33ce59cb1f86a0e30499b7727692eb0dd7a62c9208c30f7112c128f70b6ff7c"
+    },
+    {
+      "name": "MS-XCEP.pdf",
+      "url": "https://winprotocoldoc.z19.web.core.windows.net/MS-XCEP/%5bMS-XCEP%5d.pdf",
+      "revision": "18.0",
+      "date": "2026-03-09",
+      "sha256": "15212851820703c52b1e1bd68de5c71d176c431441956a9b74b0f971a6ca4603"
+    },
+    {
+      "name": "MS-WSTEP.pdf",
+      "url": "https://winprotocoldoc.z19.web.core.windows.net/MS-WSTEP/%5bMS-WSTEP%5d.pdf",
+      "revision": "15.0",
+      "date": "2024-04-23",
+      "sha256": "a4ee0dcfe98d96fdd8ba153be6fbb5b78d28ba6f14d26a5734ce6288906eb154"
+    },
+    {
+      "name": "W3C-NOTE-wbxml-19990624.html",
+      "url": "https://www.w3.org/TR/wbxml/",
+      "revision": "WBXML 1.1 (W3C NOTE)",
+      "date": "1999-06-24",
+      "sha256": "c0ddaaa77ef328f04a04136f64424f4cc22ce460609de96c618a7c86fbde6792"
+    }
+  ]
+}

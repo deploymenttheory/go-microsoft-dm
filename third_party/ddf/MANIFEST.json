@@ -1,0 +1,14 @@
+{
+  "bundles": [
+    {
+      "file": "DDFv2Feb2026.zip",
+      "url": "https://download.microsoft.com/download/015bd9f5-9cca-4821-8a85-a4c5f9a5d0f2/DDFv2Feb2026.zip",
+      "sha256": "bf667d895af4a8c8ab5a31065ce0e28ea2f8b649c4dc416f452f62fd1c42ff14",
+      "size": 727650,
+      "lastModified": "2026-02-19T18:04:42Z",
+      "etag": "0xDB0E6929501D0CAF5F1E5C690E71B07CCF022AE2B388FB1C7DF5C60B648AED2D",
+      "topFolder": "DDFDrop012026/",
+      "files": 313
+    }
+  ]
+}
