@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<SyncML xmlns="SYNCML:SYNCML1.2">
+  <SyncBody>
+    <Exec>
+      <CmdID>2</CmdID>
+      <Item>
+        <Target>
+          <LocURI>./Vendor/MSFT/DiagnosticLog/DeviceStateData/MdmConfiguration</LocURI>
+        </Target>
+        <Meta>
+           <Format xmlns="syncml:metinf">chr</Format>
+        </Meta>
+        <Data>SNAP</Data>
+      </Item>
+    </Exec>
+    <Final/>
+  </SyncBody>
+</SyncML>

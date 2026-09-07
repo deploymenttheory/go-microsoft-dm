@@ -1,0 +1,11 @@
+<Alert>
+    <CmdID>1</CmdID>
+    <Data>1224</Data>
+    <Item>
+        <Meta>
+            <Type xmlns="syncml:metinf">com.microsoft/MDM/LoginStatus</Type>
+            <Format xmlns="syncml:metinf">chr</Format>
+        </Meta>
+        <Data>user</Data>
+    </Item>
+</Alert>

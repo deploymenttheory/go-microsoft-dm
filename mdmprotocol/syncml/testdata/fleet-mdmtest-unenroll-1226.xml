@@ -1,0 +1,28 @@
+<SyncML xmlns="SYNCML:SYNCML1.2">
+	<SyncHdr>
+		<VerDTD>1.2</VerDTD>
+		<VerProto>DM/1.2</VerProto>
+		<SessionID>2</SessionID>
+		<MsgID>1</MsgID>
+		<Target>
+			<LocURI>https://mdm.example.test/ManagementServer/MDM.svc</LocURI>
+		</Target>
+		<Source>
+			<LocURI>F717C0F0-5F68-4AC3-A341-01B2544219DF</LocURI>
+		</Source>
+	</SyncHdr>
+	<SyncBody>
+		<Alert>
+			<CmdID>4</CmdID>
+			<Data>1226</Data>
+			<Item>
+				<Meta>
+					<Type xmlns="syncml:metinf">com.microsoft:mdm.unenrollment.userrequest</Type>
+					<Format xmlns="syncml:metinf">int</Format>
+				</Meta>
+				<Data>1</Data>
+			</Item>
+		</Alert>
+		<Final/>
+	</SyncBody>
+</SyncML>

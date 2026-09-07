@@ -31,7 +31,7 @@ to this plan too: fix the plan, cite the date.
 |---|---|---|---|
 | 0 | Repository bootstrap and governance | done (2026-09-07) | Module path is `go-microsoft-dm`, matching the repository |
 | 1 | Foundation packages | done (2026-09-07) | `testpki.WindowsCSR` reproduces the Fleet-documented `!` subject |
-| 2 | SyncML wire model | not started | |
+| 2 | SyncML wire model | done (2026-09-07) | `mattrax/xml` not needed; hand-written writer over `encoding/xml` tokens |
 | 3 | CSP schema generated from DDF v2 | not started | |
 | 4 | Enrollment: MS-MDE2 with XCEP and WSTEP | not started | |
 | 5 | Management session: MS-MDM over SyncML | not started | |
