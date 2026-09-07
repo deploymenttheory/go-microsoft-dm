@@ -85,11 +85,20 @@ jobs:
           pattern: cover-*
           path: cover-dl
       - name: Arrange coverage directories
+        # download-artifact nests each artifact under cover-dl/<name>/ when the
+        # pattern matches several, but flattens a single match into cover-dl/
+        # itself; handle both so the gate works before the storage and e2e
+        # layers exist.
         run: |
           mkdir -p cover
-          for d in cover-dl/cover-*; do
-            name="${d##*/cover-}"; mkdir -p "cover/$name"; cp -r "$d"/. "cover/$name"/ 2>/dev/null || true
-          done
+          if ls cover-dl/covmeta.* >/dev/null 2>&1; then
+            mkdir -p cover/unit && cp -r cover-dl/. cover/unit/
+          else
+            for d in cover-dl/cover-*; do
+              [ -d "$d" ] || continue
+              name="${d##*/cover-}"; mkdir -p "cover/$name"; cp -r "$d"/. "cover/$name"/
+            done
+          fi
           ls -R cover | head -50
       - name: Enforce minimum
         run: make coverage
