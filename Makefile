@@ -34,14 +34,17 @@ tools:
 	GOTOOLCHAIN=go$(GO_VERSION) $(GO) install golang.org/x/vuln/cmd/govulncheck@latest
 	GOTOOLCHAIN=go$(GO_VERSION) $(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 
-## generate: regenerate the schema tier from the pinned DDF bundle in third_party/ddf
+## generate: regenerate schema/csp, schema/policy and schema/registry from the pinned DDF bundle in third_party/ddf
 generate:
-	$(GO) generate ./...
-	$(GO) run ./cmd/ddfgen generate
+	$(GO) run ./cmd/ddfgen -ddf $(DDF_DIR) -out schema generate
 
-## verify: fail if the pinned DDF bundle does not match its manifest, or (from Phase 3) regeneration changes anything
+## verify: fail if the pinned DDF bundle does not match its manifest, if regeneration changes anything, or if a locked identifier disappeared
 verify:
-	$(GO) run ./cmd/ddfgen verify $(DDF_DIR)
+	$(GO) run ./cmd/ddfgen -ddf $(DDF_DIR) -out schema verify
+
+## ddf-diff: list node changes between two drops (make ddf-diff OLD=third_party/ddf/a.zip NEW=third_party/ddf/b.zip)
+ddf-diff:
+	$(GO) run ./cmd/ddfgen diff "$(OLD)" "$(NEW)"
 
 ## lint: run golangci-lint with the repository configuration in both modules
 lint:
@@ -121,4 +124,4 @@ ci: lint verify test fuzz-smoke coverage
 clean:
 	rm -rf $(COVER_DIR)
 
-.PHONY: help tools generate verify lint test test-storage test-conformance test-e2e test-conformance-guest fuzz-smoke fuzz coverage vuln refs refs-activity specs ddf ci clean
+.PHONY: help tools generate verify ddf-diff lint test test-storage test-conformance test-e2e test-conformance-guest fuzz-smoke fuzz coverage vuln refs refs-activity specs ddf ci clean
