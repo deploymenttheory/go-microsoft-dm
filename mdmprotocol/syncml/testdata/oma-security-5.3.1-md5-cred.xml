@@ -1,0 +1,32 @@
+<SyncML xmlns='SYNCML:SYNCML1.2'>
+<SyncHdr>
+<VerDTD>1.2</VerDTD>
+<VerProto>DM/1.2</VerProto>
+<SessionID>1</SessionID>
+<MsgID>1</MsgID>
+<Target>
+<LocURI>http://www.syncml.org/mgmt-server</LocURI>
+</Target>
+<Source>
+<LocURI>IMEI:493005100592800</LocURI>
+<LocName>Bruce1</LocName>
+</Source>
+<Cred>
+<Meta>
+  <Type xmlns="syncml:metinf">syncml:auth-md5</Type>
+  <Format xmlns="syncml:metinf">b64</Format>
+</Meta>
+<Data>18EA3F</Data>
+</Cred>
+<Meta>
+<MaxMsgSize xmlns="syncml:metinf">5000</MaxMsgSize>
+</Meta>
+</SyncHdr>
+<SyncBody>
+<Alert>
+<CmdID>1</CmdID>
+<Data>1201</Data>
+</Alert>
+<Final/>
+</SyncBody>
+</SyncML>

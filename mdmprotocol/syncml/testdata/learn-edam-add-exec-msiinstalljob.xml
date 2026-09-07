@@ -1,0 +1,46 @@
+<SyncML xmlns="SYNCML:SYNCML1.1">
+  <SyncBody>
+    <Add>
+      <CmdID>1</CmdID>
+      <Item>
+        <Target>
+          <LocURI>./Device/Vendor/MSFT/EnterpriseDesktopAppManagement/MSI/%7B6F7CB29F-1319-4816-B345-0856916EB801%7D/DownloadInstall</LocURI>
+        </Target>
+      </Item>
+    </Add>
+    <Exec>
+      <CmdID>67890</CmdID>
+      <Item>
+        <Target>
+          <LocURI>./Device/Vendor/MSFT/EnterpriseDesktopAppManagement/MSI/%7B6F7CB29F-1319-4816-B345-0856916EB801%7D/DownloadInstall</LocURI>
+        </Target>
+        <Meta>
+          <Format xmlns="syncml:metinf">xml</Format>
+          <Type xmlns="syncml:metinf">text/plain</Type>
+        </Meta>
+        <Data>
+          <MsiInstallJob id="{9BD4F7CD-880A-40B5-B74C-1BEECB51E596}">
+            <Product Version="1.0.0">
+              <Download>
+                <ContentURLList>
+                  <ContentURL>http://bcl-w2k12r2-vm/testapps/msi/Orca/Orca.msi</ContentURL>
+                  <ContentURL>https://dp2.com/packages/myApp.msi</ContentURL>
+                </ContentURLList>
+              </Download>
+              <Validation>
+                <FileHash>4525065777EF18B9444ABF71DD4B48E5F64F4F0E1E029995FB8DA441CDE4296E</FileHash>
+              </Validation>
+              <Enforcement>
+                <CommandLine>/quiet</CommandLine>
+                <TimeOut>5</TimeOut>
+                <RetryCount>3</RetryCount>
+                <RetryInterval>5</RetryInterval>
+              </Enforcement>
+            </Product>
+          </MsiInstallJob>
+        </Data>
+      </Item>
+    </Exec>
+    <Final/>
+  </SyncBody>
+</SyncML>

@@ -1,0 +1,30 @@
+<SyncML xmlns="SYNCML:SYNCML1.2">
+  <SyncHdr>
+    <VerDTD>1.2</VerDTD>
+    <VerProto>DM/1.2</VerProto>
+    <SessionID>1</SessionID>
+    <MsgID>2</MsgID>
+    <Target>
+      <LocURI>F717C0F0-5F68-4AC3-A341-01B2544219DF</LocURI>
+    </Target>
+    <Source>
+      <LocURI>https://mdm.example.test/ManagementServer/MDM.svc</LocURI>
+    </Source>
+  </SyncHdr>
+  <SyncBody>
+    <Exec>
+      <CmdID>11</CmdID>
+      <Item>
+        <Target>
+          <LocURI>./cimv2/MDM_EASPolicy/MDM_EASPolicy.Key=%221%22/Exec=SetValues</LocURI>
+        </Target>
+        <Meta>
+          <Format xmlns="syncml:metinf">chr</Format>
+          <Type xmlns="syncml:metinf">text/plain</Type>
+        </Meta>
+        <Data>NamedValuesList=MinPasswordLength,8;</Data>
+      </Item>
+    </Exec>
+    <Final/>
+  </SyncBody>
+</SyncML>

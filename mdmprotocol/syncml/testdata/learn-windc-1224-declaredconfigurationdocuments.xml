@@ -1,0 +1,35 @@
+<SyncML xmlns="SYNCML:SYNCML1.1">
+  <SyncHdr>
+    <VerDTD>1.2</VerDTD>
+    <VerProto>DM/1.2</VerProto>
+    <SessionID>1</SessionID>
+    <MsgID>1</MsgID>
+    <Target>
+      <LocURI>https://windc.example.test/ManagementServer/MDM.svc</LocURI>
+    </Target>
+    <Source>
+      <LocURI>F717C0F0-5F68-4AC3-A341-01B2544219DF</LocURI>
+    </Source>
+  </SyncHdr>
+  <SyncBody>
+    <Alert>
+      <CmdID>2</CmdID>
+      <Data>1201</Data>
+    </Alert>
+    <Alert>
+      <CmdID>3</CmdID>
+      <Data>1224</Data>
+      <Item>
+        <Meta>
+          <Type xmlns="syncml:metinf">com.microsoft.mdm.declaredconfigurationdocuments</Type>
+        </Meta>
+        <Data>
+          <DeclaredConfigurations schema="1.0">
+            <DeclaredConfiguration context="Device" id="99988660-9080-3433-96e8-f32e85011e55" checksum="99925209110918B67FE962460BE0DBB0" result_checksum="99925209110918B67FE962460BE0DBB0" state="60"/>
+          </DeclaredConfigurations>
+        </Data>
+      </Item>
+    </Alert>
+    <Final/>
+  </SyncBody>
+</SyncML>
