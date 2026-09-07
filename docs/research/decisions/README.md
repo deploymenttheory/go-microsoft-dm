@@ -18,9 +18,9 @@ cross-reference before the files exist; a reserved row names the phase that writ
 | 0005 | [SyncML message model and XML policy](0005-syncml-message-model-and-xml-policy.md) | 2 |
 | 0006 | [Schema generator over DDF v2](0006-schema-generator-over-ddf-v2.md) | 3 |
 | 0007 | [Relationship to go-sdk-windowscsp](0007-relationship-to-go-sdk-windowscsp.md) | 3 |
-| 0008 | Enrollment protocol and the provisioning document (reserved) | 4 |
-| 0009 | WSTEP CA and CSR handling (reserved) | 4 |
-| 0010 | Storage interfaces and the contract suite (reserved) | 4 |
+| 0008 | [Enrollment protocol and the provisioning document](0008-enrollment-protocol-and-provisioning-document.md) | 4 |
+| 0009 | [WSTEP CA and CSR handling](0009-wstep-ca-and-csr-handling.md) | 4 |
+| 0010 | [Storage interfaces and the contract suite](0010-storage-interfaces-and-contract-suite.md) | 4 |
 | 0011 | Management session engine (reserved) | 5 |
 | 0012 | Command queue, results and retention (reserved) | 5 |
 | 0013 | Scope and the user channel (reserved) | 5 |
