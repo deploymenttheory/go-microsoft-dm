@@ -113,7 +113,7 @@ func TestVocabularyBoundsHostileValues(t *testing.T) {
 // metric attribute or a span name.
 func TestChannelURIAndDeviceIDNeverReachTelemetry(t *testing.T) {
 	t.Parallel()
-	const token = "AwYAAAB8vPBaq0Kf0Yl5VvXjN8mY3vG0fH2kq9zL1c0aQ7RpT5wE2nB9xM4dS6uK"
+	const token = "AwYAAAB8vPBaq0Kf0Yl5VvXjN8mY3vG0fH2kq9zL1c0aQ7RpT5wE2nB9xM4dS6uK" // gitleaks:allow — a made-up sentinel, not a credential
 	const deviceID = "F717C0F0-5F68-4AC3-A341-01B2544219DFB0A902F747A9C4FD43C8CE36CE"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)

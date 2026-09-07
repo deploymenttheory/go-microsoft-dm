@@ -99,7 +99,7 @@ jobs:
               name="${d##*/cover-}"; mkdir -p "cover/$name"; cp -r "$d"/. "cover/$name"/
             done
           fi
-          ls -R cover | head -50
+          find cover | head -50
       - name: Enforce minimum
         run: make coverage
       - name: Upload report
