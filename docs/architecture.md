@@ -9,7 +9,7 @@ and rationale.
 
 | Module | Contents today | Dependencies |
 |---|---|---|
-| `github.com/deploymenttheory/go-microsoft-dm` | Foundation packages, the DDF bundle verifier, placeholder packages for every later tier | OpenTelemetry API modules; exact versions in the root `go.mod` |
+| `github.com/deploymenttheory/go-microsoft-dm` | Foundation packages, the generated CSP schema, the SyncML codec, MS-MDE2 enrollment with its CA and storage contracts, the simulator, placeholder packages for every later tier | OpenTelemetry API modules; exact versions in the root `go.mod` |
 | `github.com/deploymenttheory/go-microsoft-dm/server` | Placeholder packages and the `dmserver` and `dmctl` stubs | The root module |
 
 Both modules use Go 1.27. `go.work` joins them for local development and the server's `replace`
@@ -21,11 +21,11 @@ populated tiers, directory-level cycles and the module boundary, in production a
 |---|---|---|---|
 | Foundation | `clock`, `paging`, `secrets`, `telemetry`, `state`, `ratelimit`, `testpki` | Injected time, cursor paging, redacting secrets, the OpenTelemetry seam, transactional expiring state, GCRA quotas, test PKI | Implemented (decision record 0004) |
 | Schema | `schema/csp`, `schema/csp/<name>`, `schema/policy/<area>`, `schema/registry`, `schema/support`, `schema/validation`, `internal/schemagen`, `cmd/ddfgen` | Runtime model, generated node tables and URI constants for 57 CSPs and 261 Policy areas, the registry over all 400 trees, build applicability and command validation | Implemented (decision records 0006 and 0007) |
-| Protocol | `mdmprotocol/{syncml,soap,wapprov,enroll,mdm,windc,event,dmhook}` | SyncML codec, SOAP types, provisioning document, enrollment, session engine, WinDC, events, hooks | `syncml` implemented (decision record 0005); the rest are placeholders (Phases 4, 5, 12) |
-| PKI | `pki/{ca,wstep,xcep,scep,attestation,revocation}` | CA interface, CSR parsing, XCEP policy, SCEP, attestation, revocation | Placeholders (Phases 4, 9, 11) |
+| Protocol | `mdmprotocol/{syncml,soap,wapprov,enroll,mdm,windc,event,dmhook}` | SyncML codec, SOAP envelope and faults, provisioning document, enrollment flow, session engine, WinDC, events, hooks | `syncml` (decision record 0005), `soap`, `wapprov` and `enroll` (decision record 0008) implemented; `mdm`, `windc`, `event`, `dmhook` are placeholders (Phases 5, 12) |
+| PKI | `pki/{ca,wstep,xcep,scep,attestation,revocation}` | CA interface, CSR parsing and issuance, XCEP policy, SCEP, attestation, revocation | `ca`, `wstep`, `xcep` implemented (decision record 0009); `scep`, `attestation`, `revocation` are placeholders (Phases 9, 11) |
 | Platform services | `msplatformservices/{wns,entra,graph}` | WNS push, Entra token validation, Graph | Placeholders (Phases 8, 10) |
-| Storage | `storage`, `storage/inmem`, `storage/storagetest` | Domain contracts, in-memory backend, contract suite | Placeholders (Phase 4) |
-| Client | `simulator` | A Windows MDM client in software | Placeholder (Phases 4, 5) |
+| Storage | `storage`, `storage/inmem`, `storage/storagetest` | Enrollment and certificate contracts, the enrollment recorder, in-memory backend, contract suite | Implemented (decision record 0010); session-engine contracts arrive in Phase 5 |
+| Client | `simulator` | A Windows MDM client in software | Enrollment implemented (decision record 0008); the session client arrives in Phase 5 |
 | Server | `server/{sqlstore,service,httpapi,pushnotify,windcsync,adminauth,audit,eventsink}` | Persistence, orchestration, transport, administration | Placeholders (Phases 6, 8, 12, 15) |
 | App | `server/cmd/{dmserver,dmctl}`, `server/internal/app`, `server/e2e` | Composition, CLI, scenarios | Stubs (Phase 6) |
 
@@ -80,6 +80,35 @@ from decoding, including the Atomic rules the client enforces with 500 and 507. 
 also carries the OMA DM Security MD5 digest, large-object chunking and reassembly, and the
 "Next Message" and abort response shapes. It performs no I/O; the session engine that uses it
 arrives in Phase 5.
+
+## Enrollment
+
+`mdmprotocol/soap` decodes a SOAP request into a generic envelope whose body type the caller
+names, reads the WS-Addressing and WS-Security headers (UsernameToken, BinarySecurityToken,
+Timestamp), writes replies in the exact prefix form of the MS-MDE2 examples, and renders
+faults with the seven subcodes and eight detail error types of MS-MDE2 2.2.10 as one Go error
+type. `mdmprotocol/enroll` holds the Discover, GetPolicies and RequestSecurityToken codecs in
+both directions, the typed `AdditionalContext`, and `Service`, the transport-neutral flow:
+discovery with version negotiation, on-premise authentication through an `Authenticator`,
+token checks (PKCS#7 and Renew refused until Phase 9), issuance through an `Issuer`, the
+provisioning document through a `Provisioner` and persistence through a `Recorder`; every
+failure is a fault with the specification's code. `Handler` is the HTTP adapter that answers
+the GET probe, sets `Content-Length` on every response and never chunks.
+`mdmprotocol/wapprov` builds and reads `wap-provisioningdoc`: `CertificateStore` (root, one
+intermediate, the client certificate under `My/User` or `My/System`, `My/WSTEP/Renew`), the
+w7 `APPLICATION` with both `APPAUTH` credentials, `DMClient` with Microsoft's default poll
+schedule, and `RootCATrustedCertificates`.
+
+`pki/ca` is the issuer: a policy-driven signer that never back-dates, built from memory, PEM
+or files, or generated. `pki/wstep` parses the client's PKCS#10 with a narrow relaxation for
+the PrintableString subject Windows sends, verifies the signature over the original bytes,
+and issues through the CA as `enroll.Issuer`. `pki/xcep` derives the GetPolicies answer from
+the CA policy. `storage` keys enrollments by certificate serial, indexes them by DeviceID and
+thumbprint, keeps `HWDevID` history, and reports a repeated `HWDevID` as a conflict event
+through the enrollment recorder rather than refusing or overwriting; `storage/inmem` and the
+`storage/storagetest` suite are the reference implementation and its specification.
+`simulator.Enroll` performs the whole on-premise flow as the Windows client would and returns
+the certificate, the parsed OMA DM account and the DMClient state.
 
 ## Checks
 

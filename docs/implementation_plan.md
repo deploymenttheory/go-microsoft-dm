@@ -33,7 +33,7 @@ to this plan too: fix the plan, cite the date.
 | 1 | Foundation packages | done (2026-09-07) | `testpki.WindowsCSR` reproduces the Fleet-documented `!` subject |
 | 2 | SyncML wire model | done (2026-09-07) | `mattrax/xml` not needed; hand-written writer over `encoding/xml` tokens |
 | 3 | CSP schema generated from DDF v2 | done (2026-09-07) | Census corrections recorded in 0006; SDK stays a reference (0007) |
-| 4 | Enrollment: MS-MDE2 with XCEP and WSTEP | not started | |
+| 4 | Enrollment: MS-MDE2 with XCEP and WSTEP | done (2026-09-07) | OnPremise only; PKCS#7 and Renew refused with `NotEligibleToRenew` until Phase 9; records 0008 to 0010 |
 | 5 | Management session: MS-MDM over SyncML | not started | |
 | 6 | Reference server, SQL storage and simulator end-to-end | not started | |
 | 7 | Real-client conformance on guestweave | not started | Settles open questions 1, 2, 4, 5, 6, 9 |

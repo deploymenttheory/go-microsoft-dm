@@ -20,10 +20,12 @@ version 26H2 on the shared 24H2 servicing branch (build 26100.x and later).
 
 ## Status
 
-Pre-alpha. Phases 0 to 3 of the [implementation plan](docs/implementation_plan.md) are done:
-the workspace, the pinned references, the foundation packages, the SyncML codec and the CSP
-schema generated from Microsoft's DDF v2 bundle. Nothing enrolls a device yet. The API is
-pre-1.0 and will change.
+Pre-alpha. Phases 0 to 4 of the [implementation plan](docs/implementation_plan.md) are done:
+the workspace, the pinned references, the foundation packages, the SyncML codec, the CSP
+schema generated from Microsoft's DDF v2 bundle, and MS-MDE2 enrollment with the on-premises
+authentication policy (discovery, XCEP policy, WSTEP issuance from a pluggable CA, the
+provisioning document, storage contracts and an in-memory backend, and a simulator that
+enrolls against them). No management session runs yet. The API is pre-1.0 and will change.
 
 ## Layout
 
