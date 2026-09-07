@@ -20,7 +20,7 @@ populated tiers, directory-level cycles and the module boundary, in production a
 | Tier | Paths | Responsibility | State |
 |---|---|---|---|
 | Foundation | `clock`, `paging`, `secrets`, `telemetry`, `state`, `ratelimit`, `testpki` | Injected time, cursor paging, redacting secrets, the OpenTelemetry seam, transactional expiring state, GCRA quotas, test PKI | Implemented (decision record 0004) |
-| Schema | `schema/support`, `schema/validation`, `internal/schemagen`, `cmd/ddfgen` | Generated CSP types and validation from the pinned DDF bundle | Bundle pin verified; generator arrives in Phase 3 |
+| Schema | `schema/csp`, `schema/csp/<name>`, `schema/policy/<area>`, `schema/registry`, `schema/support`, `schema/validation`, `internal/schemagen`, `cmd/ddfgen` | Runtime model, generated node tables and URI constants for 57 CSPs and 261 Policy areas, the registry over all 400 trees, build applicability and command validation | Implemented (decision records 0006 and 0007) |
 | Protocol | `mdmprotocol/{syncml,soap,wapprov,enroll,mdm,windc,event,dmhook}` | SyncML codec, SOAP types, provisioning document, enrollment, session engine, WinDC, events, hooks | `syncml` implemented (decision record 0005); the rest are placeholders (Phases 4, 5, 12) |
 | PKI | `pki/{ca,wstep,xcep,scep,attestation,revocation}` | CA interface, CSR parsing, XCEP policy, SCEP, attestation, revocation | Placeholders (Phases 4, 9, 11) |
 | Platform services | `msplatformservices/{wns,entra,graph}` | WNS push, Entra token validation, Graph | Placeholders (Phases 8, 10) |
@@ -33,9 +33,10 @@ populated tiers, directory-level cycles and the module boundary, in production a
 
 `third_party/ddf/DDFv2Feb2026.zip` is Microsoft's February 2026 DDF v2 bundle, checked in with a
 manifest recording its URL, SHA-256, size, HTTP `Last-Modified`, ETag, top folder and file
-count. `internal/schemagen` verifies the bundle against the manifest; `cmd/ddfgen verify` and
-`make verify` call it, and `TestPinnedBundleMatchesManifest` runs it in the unit suite. Later
-drops are added beside it, never in its place.
+count. `internal/schemagen` verifies the bundle against the manifest and generates the schema
+tier from it; `cmd/ddfgen verify` and `make verify` check both, and
+`TestPinnedBundleMatchesManifest` runs the pin check in the unit suite. Later drops are added
+beside it, never in its place.
 
 `third_party/specs/MANIFEST.json` records the OMA DM 1.2.1, SyncML Common 1.2.2, MS-MDE2,
 MS-MDM, MS-XCEP, MS-WSTEP and WBXML documents with their SHA-256; `make specs` downloads and
@@ -53,6 +54,20 @@ no-ops, measures outbound HTTP with bounded attributes and never records a URL p
 applies GCRA quotas over `state` with explicit proxy trust. `testpki` issues test identities,
 TLS server certificates and certificate requests, including the PrintableString subject the
 Windows enrollment client sends, which the standard library rejects.
+
+## CSP schema
+
+`cmd/ddfgen generate` parses the pinned DDF v2 bundle with `internal/schemagen` and writes one
+package per configuration service provider under `schema/csp` and per Policy area under
+`schema/policy`: a `csp.Tree` literal with every node's format, access, applicability, allowed
+values, naming rule, dependencies and behaviour flags, a URI constant per static node and a
+function per node below a dynamic segment, and a constant per ENUM and Flag value.
+`schema/registry` joins the 400 trees and resolves any concrete URI to its node with the
+dynamic segments captured. `schema/support` decides whether a node applies to a device build,
+knowing that 24H2, 25H2 and 26H2 share a servicing branch and which DDF values are sentinels.
+`schema/validation` checks a command's node, verb, format and value before it is queued.
+`make verify` fails when regeneration would change a byte or drop a locked identifier;
+`make ddf-diff` reviews the next Microsoft drop node by node.
 
 ## SyncML codec
 
