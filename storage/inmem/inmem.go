@@ -21,6 +21,7 @@ type Store struct {
 	byThumb     map[string]string               // thumbprint -> serial
 	certs       map[string]*storage.Certificate // by serial
 	certThumb   map[string]string               // thumbprint -> serial
+	creds       map[string]storage.MDMCredential // device id -> OMA DM credential
 }
 
 // New returns an empty store.
@@ -28,6 +29,7 @@ func New() *Store {
 	return &Store{
 		enrollments: map[string]*storage.Enrollment{}, active: map[string]string{}, byThumb: map[string]string{},
 		certs: map[string]*storage.Certificate{}, certThumb: map[string]string{},
+		creds: map[string]storage.MDMCredential{},
 	}
 }
 
@@ -306,3 +308,4 @@ func copyCertificate(c *storage.Certificate) *storage.Certificate {
 	out.Raw = append([]byte(nil), c.Raw...)
 	return &out
 }
+
