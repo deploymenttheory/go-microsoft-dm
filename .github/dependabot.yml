@@ -29,3 +29,13 @@ updates:
       prefix: "chore"
       prefix-development: "chore"
       include: "scope"
+
+  # The reference server is a second module with its own go.mod.
+  - package-ecosystem: "gomod"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"

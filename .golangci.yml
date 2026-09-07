@@ -100,12 +100,6 @@ linters:
         linters:
           - forbidigo
 
-      # silence known gosec warning in this vendored code
-      - path: internal/hmac/
-        text: "weak cryptographic primitive"
-        linters:
-          - gosec
-
       # drop staticcheck’s SA9003 messages
       - linters:
           - staticcheck
@@ -124,10 +118,11 @@ linters:
       - "tools/.*"                # Build/helper tools
       - "scripts/.*"              # Scripts for development
       - "docs/.*\\.go$"           # Documentation generators
+      - "third_party/.*"          # Pinned upstream material and read-only reference clones
 
     # Never exclude these critical paths, even if they match patterns above
     paths-except:
-      - "internal/.*\\.go$"       # Core provider logic
+      - "internal/.*\\.go$"       # Generator and layout tooling
 
 formatters:
   # Only run the formatters you actually want to auto‐fix in CI
