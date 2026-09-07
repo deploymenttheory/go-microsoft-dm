@@ -2,12 +2,14 @@
 //
 // # Design
 //
-// Phase 4 of the implementation plan fills this package. It exists for tests,
-// the simulator and single-process deployments; it loses state on restart.
-// Until Phase 4 the package is empty.
+// Store keeps enrollments and certificates in maps under one mutex and
+// returns copies, so callers never share memory with the store. It exists
+// for tests, the simulator and single-process deployments and loses state
+// on restart. Listing sorts on every call; the SQL backends in the server
+// module index instead. It passes storagetest.RunAll, which is the
+// definition of correct behaviour for every backend.
 //
 // # References
 //
-//   - Decision record 0001: https://github.com/deploymenttheory/go-microsoft-dm/blob/main/docs/research/decisions/0001-architecture.md
-//   - Implementation plan, Phase 4: https://github.com/deploymenttheory/go-microsoft-dm/blob/main/docs/implementation_plan.md
+//   - Decision record 0010: https://github.com/deploymenttheory/go-microsoft-dm/blob/main/docs/research/decisions/0010-storage-interfaces-and-contract-suite.md
 package inmem
