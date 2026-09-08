@@ -91,6 +91,18 @@ Transport: `enroll.Handler` sets `Content-Length` on every response so nothing i
 answers faults with status 500, rejects bodies over the configured bound with 413, and
 performs no checks on `User-Agent`, hostnames or value formats beyond the specification's.
 
+## Native Windows verification (2026-09-08)
+
+Desktop validation on Windows 11 build 26200.9278 found two bootstrap
+compatibility issues. The reference server now provisions its root through
+CertificateStore only: an extra top-level RootCATrustedCertificates was rejected
+with event 56. It also supplies separate random initial nonces for both DIGEST
+credentials; omitting both caused account configuration error 0x80070057.
+With these changes, repeated native enrollments and a read-only management query
+succeeded. Optional nonce support remains unchanged in the protocol library.
+The simulation server shares the corrected credential source and has regression
+coverage. See the [investigation and results](../windows-enrollment-investigation.md).
+
 ## Rationale
 
 Typed bodies decoded through a generic envelope keep the shared parts in one place without

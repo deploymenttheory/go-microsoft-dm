@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -19,8 +20,8 @@ var errBoom = errors.New("boom")
 // fakeStore implements service.Store with per-method injectable errors and
 // a settable active enrollment for Get.
 type fakeStore struct {
-	fail       map[string]error
-	active     *storage.Enrollment
+	fail        map[string]error
+	active      *storage.Enrollment
 	setStateErr error
 	revokeErr   error
 	events      int
@@ -46,7 +47,9 @@ func (f *fakeStore) GetBySerial(context.Context, string) (*storage.Enrollment, e
 func (f *fakeStore) GetByThumbprint(context.Context, string) (*storage.Enrollment, error) {
 	return nil, storage.ErrNotFound
 }
-func (f *fakeStore) ListByHWDevID(context.Context, string) ([]storage.Enrollment, error) { return nil, nil }
+func (f *fakeStore) ListByHWDevID(context.Context, string) ([]storage.Enrollment, error) {
+	return nil, nil
+}
 func (f *fakeStore) SetState(context.Context, string, storage.State, time.Time) error {
 	return f.setStateErr
 }
@@ -169,6 +172,9 @@ func TestCredentialSourceSuccess(t *testing.T) {
 	if client.Secret == "" || client.Name != "" {
 		t.Errorf("client cred = %+v", client)
 	}
+	if len(server.Nonce) != 16 || len(client.Nonce) != 16 || bytes.Equal(server.Nonce, client.Nonce) {
+		t.Fatal("credentials need independent 16-byte initial digest nonces")
+	}
 	if fs.creds != 1 {
 		t.Errorf("stored %d credentials, want 1", fs.creds)
 	}
@@ -195,5 +201,27 @@ func TestRandomSecretFailure(t *testing.T) {
 	}
 	if _, _, err := cs.Credentials(context.Background(), enrollmentFor("d")); !errors.Is(err, errBoom) {
 		t.Errorf("client secret err = %v", err)
+	}
+}
+
+func TestCredentialNonceFailureDoesNotPersist(t *testing.T) {
+	orig := randRead
+	t.Cleanup(func() { randRead = orig })
+	calls := 0
+	randRead = func(b []byte) (int, error) {
+		calls++
+		if calls <= 2 {
+			return len(b), nil
+		}
+		return 0, errBoom
+	}
+	fs := &fakeStore{}
+	cs := &credentialSource{store: fs, clock: clock.Real{}}
+	server, client, err := cs.Credentials(context.Background(), enrollmentFor("d"))
+	if !errors.Is(err, errBoom) {
+		t.Fatalf("nonce error = %v", err)
+	}
+	if fs.creds != 0 || server.Secret != "" || client.Secret != "" {
+		t.Fatal("nonce failure must not persist or return partial credentials")
 	}
 }

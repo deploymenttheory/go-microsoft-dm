@@ -569,6 +569,15 @@ a Dockerfile builds `dmserver`.
 
 ## Phase 7: Real-client conformance on guestweave
 
+Execution update (2026-09-08): the user superseded the VM approach with Windows
+desktop validation. Repeated native enrollments and an authenticated read-only
+management query passed on build 26200.9278 after correcting reference-server
+bootstrap provisioning. The simulation server and regression tests include the
+fix. Reusable desktop scripts are in [scripts/enrollment](../scripts/enrollment/README.md).
+See [results](research/windows-enrollment-investigation.md). This validates
+the desktop enrollment path, not the original multi-version conformance matrix
+or all deliverables listed below.
+
 Goal: enroll and manage a real Windows 11 guest (26100.x on the current LCU, and a 26300.x
 Release Preview guest), capture what the real client sends, turn captures into fixtures, and close
 the open questions that only a real client can answer.

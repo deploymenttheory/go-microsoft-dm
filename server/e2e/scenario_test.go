@@ -3,6 +3,7 @@
 package e2e_test
 
 import (
+	"bytes"
 	"context"
 	"strings"
 	"testing"
@@ -42,6 +43,10 @@ func TestEnrollAndFirstSession(t *testing.T) {
 	if res.Certificate == nil || res.Account.ProviderID != "e2e" {
 		t.Fatalf("enrollment result = %+v", res.Account)
 	}
+	if len(res.Account.ServerAuth.Nonce) != 16 || len(res.Account.ClientAuth.Nonce) != 16 ||
+		bytes.Equal(res.Account.ServerAuth.Nonce, res.Account.ClientAuth.Nonce) {
+		t.Fatal("simulation server must provision independent initial digest nonces for native Windows enrollment")
+	}
 	// The enrollment is persisted.
 	stored, err := h.app.Store.Get(context.Background(), deviceID)
 	if err != nil || stored.Serial != res.Certificate.SerialNumber.String() {
@@ -58,6 +63,73 @@ func TestEnrollAndFirstSession(t *testing.T) {
 	facts, err := h.app.Store.Facts(context.Background(), deviceID)
 	if err != nil || facts.DevInfo["Man"] == "" {
 		t.Errorf("facts = %+v, %v", facts, err)
+	}
+}
+
+// Exercise the same read-only round trip used during native desktop validation.
+func TestEnrollmentReadOnlyQuery(t *testing.T) {
+	h := newHarness(t)
+	_, dev := enrollDevice(t, h)
+	ctx := context.Background()
+	dev.Tree = map[string]string{"./DevInfo/Man": "Desktop validation manufacturer"}
+	cmd, err := mdm.NewGet([]string{"./DevInfo/Man"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	queued, err := h.app.Store.Queue().Enqueue(ctx, deviceID, cmd, timeNow())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := dev.RunSession(ctx, "1"); err != nil {
+		t.Fatal(err)
+	}
+	result, err := h.app.Store.Queue().Get(ctx, deviceID, queued.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.State != mdm.StateAcknowledged || result.Result == nil || result.Result.Status != syncml.StatusOK ||
+		len(result.Result.Items) != 1 || result.Result.Items[0].Data.Text() != dev.Tree["./DevInfo/Man"] {
+		t.Fatalf("read-only query was not successfully answered: %+v", result)
+	}
+}
+
+func TestReenrollmentRefreshesDigestCredentials(t *testing.T) {
+	h := newHarness(t)
+	first, dev := enrollDevice(t, h)
+	ctx := context.Background()
+	dev.Generics = []simulator.GenericAlert{{Type: syncml.AlertTypeUnenrollmentUserRequest, Format: syncml.FormatInt, Data: "1"}}
+	if _, err := dev.RunSession(ctx, "1"); err != nil {
+		t.Fatal(err)
+	}
+	serial := first.Certificate.SerialNumber.String()
+	previous, err := h.app.Store.GetBySerial(ctx, serial)
+	if err != nil || previous.State != storage.StateUnenrolled {
+		t.Fatalf("first enrollment was not removed: %v", err)
+	}
+	cert, err := h.app.Store.Certificate(ctx, serial)
+	if err != nil || !cert.Revoked {
+		t.Fatalf("first certificate was not revoked: %v", err)
+	}
+	second, next := enrollDevice(t, h)
+	for _, pair := range [][2]simulator.Credential{
+		{first.Account.ServerAuth, second.Account.ServerAuth},
+		{first.Account.ClientAuth, second.Account.ClientAuth},
+	} {
+		if pair[0].Secret == pair[1].Secret || len(pair[1].Nonce) != 16 || bytes.Equal(pair[0].Nonce, pair[1].Nonce) {
+			t.Fatal("reenrollment must generate fresh secrets and initial digest nonces")
+		}
+	}
+	if first.Certificate.SerialNumber.Cmp(second.Certificate.SerialNumber) == 0 {
+		t.Fatal("reenrollment reused the previous certificate")
+	}
+	active, err := h.app.Store.Get(ctx, deviceID)
+	if err != nil || active.State != storage.StateActive || active.Serial != second.Certificate.SerialNumber.String() {
+		t.Fatalf("second enrollment is not active: %v", err)
+	}
+	// A new device object begins again at session 1, as after native unenrollment.
+	tr, err := next.RunSession(ctx, "1")
+	if err != nil || !tr.Ended || tr.Challenged != 1 {
+		t.Fatalf("reenrolled device could not authenticate: transcript=%+v, err=%v", tr, err)
 	}
 }
 

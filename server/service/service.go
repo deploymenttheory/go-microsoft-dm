@@ -138,9 +138,8 @@ func New(cfg Config) (*Service, error) {
 	creds := &credentialSource{store: cfg.Store, clock: cfg.Clock}
 	prov, err := enroll.NewProvisioner(enroll.ProvisionConfig{
 		ManagementURL: managementURL, ProviderID: cfg.ProviderID, Name: cfg.Name,
-		Credentials:          creds,
-		IncludeRootCATrusted: true,
-		EntDMID:              func(e *enroll.Enrollment) string { return e.Request.Context.DeviceID },
+		Credentials: creds,
+		EntDMID:     func(e *enroll.Enrollment) string { return e.Request.Context.DeviceID },
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrConfig, err)

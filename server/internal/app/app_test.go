@@ -1,10 +1,12 @@
 package app_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
@@ -19,6 +21,7 @@ import (
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/enroll"
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/mdm"
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/syncml"
+	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/wapprov"
 	"github.com/deploymenttheory/go-microsoft-dm/pki/ca"
 	"github.com/deploymenttheory/go-microsoft-dm/server/internal/app"
 	"github.com/deploymenttheory/go-microsoft-dm/server/sqlstore"
@@ -45,7 +48,7 @@ func (l *lazy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 const deviceID = "F717C0F0-5F68-4AC3-A341-01B2544219DF"
 
-// newApp starts a memory-backed app behind a TLS test server.
+// newApp starts an app with an isolated SQLite database behind a TLS test server.
 func newApp(t *testing.T) (*app.App, *httptest.Server) {
 	t.Helper()
 	l := &lazy{}
@@ -53,7 +56,8 @@ func newApp(t *testing.T) (*app.App, *httptest.Server) {
 	t.Cleanup(srv.Close)
 	var logged int
 	a, err := app.New(context.Background(), app.Config{
-		Store: sqlstore.SQLite, Memory: true, BaseURL: srv.URL, ProviderID: "app-test", Name: "App Test",
+		Store: sqlstore.SQLite, DSN: "file:" + filepath.ToSlash(filepath.Join(t.TempDir(), "app.db")),
+		BaseURL: srv.URL, ProviderID: "app-test", Name: "App Test",
 		Role: app.RoleAll, EnrollAllowAny: true,
 	}, app.Options{Clock: clock.Real{}, Log: func(string, string, int) { logged++ }})
 	if err != nil {
@@ -110,6 +114,51 @@ func TestAppEndToEnd(t *testing.T) {
 	list, _ := a.Store.ListByHWDevID(ctx, strings.Repeat("A", 64))
 	if len(list) == 0 || list[len(list)-1].State != storage.StateUnenrolled {
 		t.Errorf("not unenrolled: %+v", list)
+	}
+}
+
+// Enrollment event 56 on Windows 11 build 26200.9278 rejects a top-level
+// RootCATrustedCertificates characteristic. The root is already installed
+// through CertificateStore, as in MS-MDE2 2.2.9.1 and Fleet's provisioning.
+func TestEnrollmentErrorCodesProvisioningUsesCertificateStore(t *testing.T) {
+	t.Parallel()
+	_, srv := newApp(t)
+	res, err := simulator.Enroll(context.Background(), simulator.Client{
+		HTTP: srv.Client(), DiscoveryURL: srv.URL + enroll.DiscoveryPath,
+		Email: "u@contoso.com", Password: "pw", DeviceID: deviceID, WindowsSubject: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{wapprov.TypeCertificateStore, wapprov.TypeApplication, wapprov.TypeDMClient}
+	if len(res.Document.Characteristics) != len(want) {
+		t.Fatalf("provisioning has %d characteristics, want CertificateStore, APPLICATION, DMClient", len(res.Document.Characteristics))
+	}
+	for i, typ := range want {
+		if res.Document.Characteristics[i].Type != typ {
+			t.Errorf("characteristic %d = %q, want %q", i, res.Document.Characteristics[i].Type, typ)
+		}
+	}
+	if len(res.Roots) != 1 || res.Document.Find(wapprov.TypeCertificateStore).Path("Root", "System", wapprov.Thumbprint(res.Roots[0].Raw)) == nil {
+		t.Fatal("enrollment root is missing from CertificateStore/Root/System")
+	}
+	// Without these initial nonces the native Windows client rejected account
+	// configuration with 0x80070057, although simulator enrollment succeeded.
+	for _, auth := range res.Document.Find(wapprov.TypeApplication).Children {
+		nonce, err := base64.StdEncoding.DecodeString(auth.Value("AAUTHDATA"))
+		if err != nil || len(nonce) != 16 {
+			t.Fatalf("%s needs a base64-encoded 16-byte nonce", auth.Value("AAUTHLEVEL"))
+		}
+		parsed := res.Account.ServerAuth.Nonce
+		if auth.Value("AAUTHLEVEL") == "CLIENT" {
+			parsed = res.Account.ClientAuth.Nonce
+		}
+		if !bytes.Equal(nonce, parsed) {
+			t.Fatal("simulator did not preserve the provisioned nonce")
+		}
+	}
+	if bytes.Equal(res.Account.ServerAuth.Nonce, res.Account.ClientAuth.Nonce) {
+		t.Fatal("CLIENT and APPSRV must receive independent nonces")
 	}
 }
 
