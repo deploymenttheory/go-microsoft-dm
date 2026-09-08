@@ -20,13 +20,36 @@ version 26H2 on the shared 24H2 servicing branch (build 26100.x and later).
 
 ## Status
 
-Pre-alpha. Phases 0 to 5 of the [implementation plan](docs/implementation_plan.md) are done:
+Pre-alpha. Phases 0 to 6 of the [implementation plan](docs/implementation_plan.md) are done:
 the workspace, the pinned references, the foundation packages, the SyncML codec, the CSP
 schema generated from Microsoft's DDF v2 bundle, MS-MDE2 enrollment with the on-premises
-authentication policy, and the MS-MDM management session engine (OMA DM packages 1 to 4,
+authentication policy, the MS-MDM management session engine (OMA DM packages 1 to 4,
 certificate and MD5 authentication, a monotonic command queue with per-command results,
 device- and user-scope gating, large-object chunking, unenrollment, and a software client that
-runs whole sessions against the engine). The API is pre-1.0 and will change.
+runs whole sessions against the engine), and a reference server (`dmserver`) with an operator
+CLI (`dmctl`) over persistent SQL storage. The API is pre-1.0 and will change.
+
+## Running the reference server
+
+`dmserver` is configured entirely from `DM_*` environment variables. The smallest run uses an
+in-memory store, an ephemeral self-signed CA, and accepts any enrollment credentials:
+
+```sh
+DM_STORE=memory DM_ENROLL_ALLOW_ANY=1 DM_BASE_URL=https://localhost:8443 \
+  go -C server run ./cmd/dmserver
+```
+
+`DM_STORE` selects `sqlite`, `postgres`, `mysql` or `memory`; a real store also needs `DM_DSN`.
+Set `DM_TLS_CERT` and `DM_TLS_KEY` to terminate TLS, or front the server with a trusted proxy.
+The pure-Go build carries every SQL driver, so the container needs no system libraries:
+
+```sh
+docker build -t dmserver .
+```
+
+`dmctl` inspects and drives a store directly (same `DM_STORE`/`DM_DSN`): list enrollments,
+queue commands from a file, and read back results and events. Run `go -C server run ./cmd/dmctl`
+for its subcommands.
 
 ## Layout
 

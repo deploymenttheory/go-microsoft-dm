@@ -35,7 +35,7 @@ to this plan too: fix the plan, cite the date.
 | 3 | CSP schema generated from DDF v2 | done (2026-09-07) | Census corrections recorded in 0006; SDK stays a reference (0007) |
 | 4 | Enrollment: MS-MDE2 with XCEP and WSTEP | done (2026-09-07) | OnPremise only; PKCS#7 and Renew refused with `NotEligibleToRenew` until Phase 9; records 0008 to 0010 |
 | 5 | Management session: MS-MDM over SyncML | done (2026-09-07) | Packages 1 to 4, MD5 and mTLS auth, scope gating, chunking, unenroll; records 0011 to 0013 |
-| 6 | Reference server, SQL storage and simulator end-to-end | not started | |
+| 6 | Reference server, SQL storage and simulator end-to-end | done (2026-09-08) | `dmserver` and `dmctl`; sqlite, postgres, mysql via pure-Go drivers; contract suite plus e2e scenarios; records 0014 to 0016; Dockerfile builds `dmserver` |
 | 7 | Real-client conformance on guestweave | not started | Settles open questions 1, 2, 4, 5, 6, 9 |
 | 8 | WNS push and the poll schedule | not started | |
 | 9 | Certificate lifecycle: ROBO renewal, SCEP, PFX | not started | |

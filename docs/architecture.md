@@ -10,7 +10,7 @@ and rationale.
 | Module | Contents today | Dependencies |
 |---|---|---|
 | `github.com/deploymenttheory/go-microsoft-dm` | Foundation packages, the generated CSP schema, the SyncML codec, MS-MDE2 enrollment with its CA and storage contracts, the simulator, placeholder packages for every later tier | OpenTelemetry API modules; exact versions in the root `go.mod` |
-| `github.com/deploymenttheory/go-microsoft-dm/server` | Placeholder packages and the `dmserver` and `dmctl` stubs | The root module |
+| `github.com/deploymenttheory/go-microsoft-dm/server` | SQL storage, the service composition, the HTTP transport, the `dmserver` and `dmctl` commands, end-to-end scenarios, and placeholder packages for later tiers | The root module; pure-Go SQL drivers (modernc SQLite, pgx, MySQL) |
 
 Both modules use Go 1.27. `go.work` joins them for local development and the server's `replace`
 resolves the library from the checkout when it is built alone. Library code and tests cannot
@@ -26,8 +26,8 @@ populated tiers, directory-level cycles and the module boundary, in production a
 | Platform services | `msplatformservices/{wns,entra,graph}` | WNS push, Entra token validation, Graph | Placeholders (Phases 8, 10) |
 | Storage | `storage`, `storage/inmem`, `storage/storagetest` | Enrollment, certificate and OMA DM command-queue contracts, the enrollment recorder, the session authenticator, in-memory backends, contract suites | Implemented (decision records 0010, 0012) |
 | Client | `simulator` | A Windows MDM client in software | Enrollment (0008) and management sessions (0011) implemented |
-| Server | `server/{sqlstore,service,httpapi,pushnotify,windcsync,adminauth,audit,eventsink}` | Persistence, orchestration, transport, administration | Placeholders (Phases 6, 8, 12, 15) |
-| App | `server/cmd/{dmserver,dmctl}`, `server/internal/app`, `server/e2e` | Composition, CLI, scenarios | Stubs (Phase 6) |
+| Server | `server/{sqlstore,service,httpapi,pushnotify,windcsync,adminauth,audit,eventsink}` | Persistence, orchestration, transport, administration | `sqlstore`, `service`, `httpapi` implemented (decision records 0014, 0015); `pushnotify`, `windcsync`, `adminauth`, `audit`, `eventsink` are placeholders (Phases 8, 12, 15) |
+| App | `server/cmd/{dmserver,dmctl}`, `server/internal/app`, `server/e2e` | Composition, CLI, scenarios | Implemented (decision records 0015, 0016) |
 
 ## Pinned references
 
@@ -125,9 +125,37 @@ through the enrollment recorder rather than refusing or overwriting; `storage/in
 `simulator.Enroll` performs the whole on-premise flow as the Windows client would and returns
 the certificate, the parsed OMA DM account and the DMClient state.
 
+## Reference server
+
+`server/sqlstore` is the durable backend behind the storage contracts, one code path over
+SQLite, PostgreSQL and MySQL through pure-Go drivers so no build needs cgo. A dialect abstraction
+rebinds placeholders, chooses the upsert and blob and auto-increment forms each engine wants, and
+stores times as Unix nanoseconds and booleans as integers; SQLite is held to a single connection.
+The command body is the SyncML encoding of the command and results are the typed per-command
+`Result`, never the raw envelope, matching decision record 0012. Because `storage.Store` and
+`mdm.CommandQueue` both declare `Get` and `List` with different signatures, the queue is a
+separate `Queue` value reached through `Store.Queue()` over a shared connection. It passes the
+same `storage/storagetest` suites as the in-memory backend, plus an integration suite (build tag
+`integration`) that runs the contract against a real PostgreSQL and MySQL when their DSNs are set.
+
+`server/service` composes the enrollment and management services from a single `Config`: it mints
+the APPSRV and CLIENT digest credentials at enrollment and persists the server credential's hash,
+which is the join that lets the management session authenticate a device the enrollment issued.
+Hooks write the package-1 device facts and events, and an unenrollment revokes the certificate and
+marks the enrollment. `server/httpapi` mounts the enrollment handler on the discovery, policy and
+enrollment paths and the management handler on the management path, with an optional access log.
+`server/internal/app` builds the whole application from `DM_*` environment configuration, loading
+or generating the CA and selecting the store; `server/cmd/dmserver` runs it over HTTP with
+optional TLS and graceful shutdown, and `server/cmd/dmctl` operates a store directly, listing
+enrollments, queueing commands parsed from a file grammar, and reading back results and events.
+`server/e2e` drives the assembled server with the simulator through enrollment, a first session, a
+reboot-and-policy session, a chunked `Get`, and unenrollment, on SQLite, in-memory and PostgreSQL.
+
 ## Checks
 
 `make ci` runs lint, the DDF verification, both modules' tests with race detection, the fuzz
 smoke run and the coverage gate (95% overall and per non-exempt package). The GitHub workflows
-run the same targets on pull requests and on `main`. Release-please manages versions for both
-modules from Conventional Commits.
+run the same targets on pull requests and on `main`, and add the storage contract against
+PostgreSQL and MySQL service containers (`make test-storage`) and the end-to-end scenarios
+(`make test-e2e`); the coverage gate merges the unit, storage and e2e coverage layers before
+enforcing the minimum. Release-please manages versions for both modules from Conventional Commits.
