@@ -37,11 +37,18 @@ func (s *Queue) Enqueue(ctx context.Context, deviceID string, cmd *mdm.Command, 
 				return err
 			}
 		}
-		var maxSeq sql.NullInt64
-		if err := s.rebindRow(ctx, tx, `SELECT MAX(seq) FROM commands WHERE device_id = ?`, deviceID).Scan(&maxSeq); err != nil {
+		// The per-device counter yields a gapless, monotonic sequence even
+		// under concurrent enqueues and after Prune deletes earlier commands.
+		// The upsert holds a row lock until commit, so two concurrent
+		// enqueues for one device never read the same value.
+		if _, err := tx.ExecContext(ctx, s.d.rebind(
+			`INSERT INTO command_seq (device_id, next_seq) VALUES (?, 1)`+s.d.incrementSeq()), deviceID); err != nil {
 			return err
 		}
-		seq := maxSeq.Int64 + 1
+		var seq int64
+		if err := s.rebindRow(ctx, tx, `SELECT next_seq FROM command_seq WHERE device_id = ?`, deviceID).Scan(&seq); err != nil {
+			return err
+		}
 		if id == "" {
 			id = "cmd-" + strconv.FormatInt(seq, 10)
 			// Ensure the generated id is unique even if a caller mixed

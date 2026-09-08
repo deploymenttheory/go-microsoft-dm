@@ -62,6 +62,28 @@ func (d dialect) rebind(query string) string {
 	return b.String()
 }
 
+// incrementSeq returns the conflict clause for the per-device sequence
+// counter: on a first insert the row keeps its VALUES seq of 1, and on a
+// collision next_seq is incremented. The INSERT holds a row lock until the
+// transaction commits, so concurrent enqueues for one device serialise and
+// never share a sequence, without a dialect-specific FOR UPDATE.
+func (d dialect) incrementSeq() string {
+	if d.kind == MySQL {
+		return " ON DUPLICATE KEY UPDATE next_seq = next_seq + 1"
+	}
+	return " ON CONFLICT (device_id) DO UPDATE SET next_seq = command_seq.next_seq + 1"
+}
+
+// createIndex returns a CREATE INDEX statement. SQLite and PostgreSQL accept
+// IF NOT EXISTS; MySQL does not, so its statement omits the clause and migrate
+// tolerates the duplicate-index error on a re-run.
+func (d dialect) createIndex(name, table, cols string) string {
+	if d.kind == MySQL {
+		return "CREATE INDEX " + name + " ON " + table + " (" + cols + ")"
+	}
+	return "CREATE INDEX IF NOT EXISTS " + name + " ON " + table + " (" + cols + ")"
+}
+
 // upsert returns the conflict clause for an INSERT that updates on a key
 // collision. cols are the non-key columns to overwrite.
 func (d dialect) upsert(keyCols, cols []string) string {
