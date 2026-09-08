@@ -29,10 +29,15 @@ above the queue. `Prune` deletes terminal commands completed before a cutoff, so
 first-class operation rather than an afterthought, and `Cancel` withdraws non-terminal commands.
 
 The engine feeds the queue; it never invents commands beyond the one-time first-session reads.
-The desired-state discipline the research store calls for (never re-send unchanged
-configuration each session) is the caller's to apply through this contract: the queue delivers
-what was enqueued and reports what was acknowledged, which is the information a caller needs to
-diff desired against acknowledged state.
+The desired-state discipline the research store calls for (never re-send unchanged configuration
+each session) is served by two helpers in `mdmprotocol/mdm`. `AcknowledgedValues` reads the queue
+back into a map of LocURI to the value the device is known to hold: the value of every acknowledged
+`Add` or `Replace`, and the data of every successful `Get` result. `Diff` takes a caller's desired
+settings and that map and returns one `Replace` per setting whose value changed or is new, in URI
+order, and nothing for a setting already at its desired value. A server calls the two together to
+enqueue only what changed, so a session that finds the device already compliant sends no commands
+at all (research pitfall "Aggressive polling"). The helpers are pure over the queue contract; they
+do not enqueue or send, so a caller can inspect, filter or schema-check the diff before queueing.
 
 ## Rationale
 
@@ -60,11 +65,14 @@ commands and devices, list filters (state, internal, scope) with paging, cancel 
 commands, prune of terminal commands before a cutoff, and concurrent enqueue from many
 goroutines with no lost or duplicated sequence. `storage/inmem` runs the suite. The engine tests
 in `mdmprotocol/mdm` exercise the queue through whole sessions: a Get result filed, an Atomic's
-children recorded, and delivery split across messages by a byte budget.
+children recorded, and delivery split across messages by a byte budget. `reconcile_test.go` checks
+`Diff` (unchanged settings produce no command, a changed value and a new URI each produce one
+Replace, deterministic order, a malformed URI is skipped) and `AcknowledgedValues` (reads back a
+Replace value and a Get result, ignores pending commands, and pages).
 
 ## References
 
-- [mdmprotocol/mdm](../../../mdmprotocol/mdm) (`queue.go`, `command.go`, `results.go`), [storage/inmem](../../../storage/inmem) (`queue.go`), [storage/storagetest](../../../storage/storagetest) (`queue.go`)
+- [mdmprotocol/mdm](../../../mdmprotocol/mdm) (`queue.go`, `command.go`, `results.go`, `reconcile.go`), [storage/inmem](../../../storage/inmem) (`queue.go`), [storage/storagetest](../../../storage/storagetest) (`queue.go`)
 - [Research store](../../research.md), section 7 (pitfalls "Aggressive polling", "Storing the full SyncML response", "Same-second commands")
 - Fleet issues #43773, #44188 and #49616 (the three pitfalls this contract designs against)
 - Microsoft, [MS-MDM] 2.2.6.1 (Status) and 2.2.7.8 (Results): <https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-mdm/33769a92-ac31-47ef-ae7b-dc8501f7104f>
