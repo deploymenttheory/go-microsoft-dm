@@ -24,9 +24,9 @@ cross-reference before the files exist; a reserved row names the phase that writ
 | 0011 | [Management session engine](0011-management-session-engine.md) | 5 |
 | 0012 | [Command queue, results and retention](0012-command-queue-results-and-retention.md) | 5 |
 | 0013 | [Scope and the user channel](0013-scope-and-user-channel.md) | 5 |
-| 0014 | SQL storage backends (reserved) | 6 |
-| 0015 | Reference server roles and configuration (reserved) | 6 |
-| 0016 | `dmctl` structure (reserved) | 6 |
+| 0014 | [SQL storage backends](0014-sql-storage-backends.md) | 6 |
+| 0015 | [Reference server roles and configuration](0015-reference-server-roles-and-configuration.md) | 6 |
+| 0016 | [`dmctl` structure](0016-dmctl-structure.md) | 6 |
 | 0017 | Conformance testing with guestweave (reserved) | 7 |
 | 0018 | WNS push and poll policy (reserved) | 8 |
 | 0019 | Certificate renewal and recovery (reserved) | 9 |

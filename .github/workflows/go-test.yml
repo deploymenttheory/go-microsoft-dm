@@ -62,11 +62,94 @@ jobs:
       - name: Verify the DDF pin and generated output
         run: make verify
 
+  storage:
+    name: '🗄️ Storage contract (postgres, mysql)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: dm
+          POSTGRES_PASSWORD: dm
+          POSTGRES_DB: dm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: dm
+          MYSQL_DATABASE: dm
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -pdm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_POSTGRES_DSN: postgres://dm:dm@localhost:5432/dm?sslmode=disable
+      TEST_MYSQL_DSN: root:dm@tcp(localhost:3306)/dm?parseTime=true&multiStatements=true
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Storage contract suites
+        run: make test-storage
+      - name: Upload storage coverage
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cover-storage
+          path: cover/storage
+          if-no-files-found: error
+
+  e2e:
+    name: '🔁 End-to-end (${{ matrix.store }})'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        store: [sqlite, inmem]
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: End-to-end scenarios
+        run: make test-e2e E2E_STORE=${{ matrix.store }}
+      - name: Upload e2e coverage
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cover-e2e-${{ matrix.store }}
+          path: cover/e2e-${{ matrix.store }}
+          if-no-files-found: error
+
   coverage-gate:
     name: '📊 Coverage gate'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [unit]
+    needs: [unit, storage, e2e]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
