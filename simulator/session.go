@@ -52,6 +52,10 @@ type Device struct {
 	// Generics are generic alerts (1226) the client sends in package 1, for
 	// example a user-initiated unenroll request.
 	Generics []GenericAlert
+	// UploadChunkSize, when positive, splits a Get result larger than it
+	// into chunks sent across messages with MoreData, exercising the
+	// server's large-object reassembly.
+	UploadChunkSize int
 }
 
 // GenericAlert is a client generic alert (Alert 1226).
@@ -115,6 +119,11 @@ type sessionState struct {
 	authSent   bool
 	assembler  syncml.Assembler
 	transcript Transcript
+	// upload holds the Get-result chunks still to send, first next; uploadGet
+	// is the Get they answer and uploadRef its reference for the Results.
+	upload    []syncml.Item
+	uploadGet syncml.Command
+	uploadRef struct{ msgRef, cmdRef string }
 }
 
 // RunSession opens a session (client-initiated), answers the server until it

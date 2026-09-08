@@ -41,7 +41,10 @@ encoding a rule the server cannot actually evaluate.
 ## Constraints
 
 The engine reads scope from the LocURI prefix; a caller that hand-builds a command with a
-mismatched declared scope is caught by `Validate`, but the URI is the source of truth. AVD
+mismatched declared scope is caught by `Validate`, but the URI is the source of truth. The engine
+never emits Status 405 for a SyncType mismatch because its delivery gate never sends a wrong-scope
+command in the first place; the 405 in MS-MDM 3.2.5.1.5 is what a client returns to a server that
+did send one, so it is a client-side, conformance concern, not a server behaviour. AVD
 multi-user parallel sessions are not run (decision record 0011); only the single SyncType of a
 session is honoured. Whether a `./User` command will succeed on a given Entra-joined device is
 not predicted; the command is delivered and its Status reports the outcome.

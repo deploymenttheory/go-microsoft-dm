@@ -15,12 +15,16 @@ import (
 // LoginStatus and the AVD SyncType, chunks items that exceed the client's
 // MaxObjSize, and stops before the message grows past MaxMessageBytes.
 func (s *Service) deliver(ctx context.Context, sess *Session, req *syncml.Message, resp *syncml.Message, ids *syncml.CmdIDs) error {
-	// A 213 for any object the client is still uploading.
+	// While the client is uploading a large object, answer 213 and ask for
+	// the next chunk with Alert 1222, sending no new commands until the
+	// object is complete (OMA DM Protocol 1.2.1 section 7).
 	if sess.Assembler != nil && sess.Assembler.Pending() {
 		resp.Body.Commands = append(resp.Body.Commands, &syncml.Status{
 			CmdID: ids.Next(), MsgRef: strconv.Itoa(sess.ClientMsgID), CmdRef: "0", Cmd: syncml.CmdResults,
 			Data: syncml.Data{Value: syncml.StatusChunkedItemAccepted.Wire()},
-		})
+		}, &syncml.Alert{CmdID: ids.Next(), Data: syncml.AlertNextMessage.Wire()})
+		resp.Body.Final = false
+		return nil
 	}
 	deliverable, err := s.cfg.Queue.Deliverable(ctx, sess.DeviceID, 256)
 	if err != nil {

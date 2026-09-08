@@ -414,3 +414,33 @@ func TestSessionDeleteAndExec(t *testing.T) {
 		t.Errorf("missing-node get state = %s (result %+v)", g.State, g.Result)
 	}
 }
+
+func TestSessionChunkedUpload(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t, false, mdm.AuthDigest)
+	c := h.device(mdm.AuthDigest)
+	big := strings.Repeat("Z", 4096)
+	c.Tree = map[string]string{"./Vendor/MSFT/DiagnosticLog/Big": big}
+	get, _ := mdm.NewGet([]string{"./Vendor/MSFT/DiagnosticLog/Big"})
+	getID := enqueue(t, h, get)
+	c.UploadChunkSize = 1000
+	tr, err := c.RunSession(context.Background(), "1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !tr.Ended {
+		t.Fatal("session did not end")
+	}
+	// The large value crossed the wire in several messages and the server
+	// reassembled it.
+	if tr.Messages < 4 {
+		t.Errorf("expected chunked upload across messages, got %d", tr.Messages)
+	}
+	got, _ := h.queue.Get(context.Background(), deviceID, getID)
+	if got.State != mdm.StateAcknowledged || got.Result == nil || len(got.Result.Items) != 1 {
+		t.Fatalf("get result = %+v", got.Result)
+	}
+	if v := got.Result.Items[0].Data.Text(); v != big {
+		t.Errorf("server reassembled %d bytes, want %d", len(v), len(big))
+	}
+}

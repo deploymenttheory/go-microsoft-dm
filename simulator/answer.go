@@ -80,6 +80,13 @@ func (c *Device) answer(resp *syncml.Message, st *sessionState) (*syncml.Message
 	ids := &syncml.CmdIDs{}
 	reply.Body.Commands = append(reply.Body.Commands, syncml.StatusForHeader(resp, ids.Next(), syncml.StatusOK))
 
+	// A large Get result in flight: send the next chunk instead of a normal
+	// reply (the server answered 213 and Alert 1222).
+	if len(st.upload) > 0 {
+		c.emitUpload(reply, ids, st)
+		return reply, false, nil
+	}
+
 	emit := resp.Body.Final
 	needsResponse := false
 	for _, cmd := range resp.Body.Commands {
@@ -88,6 +95,12 @@ func (c *Device) answer(resp *syncml.Message, st *sessionState) (*syncml.Message
 		}
 		needsResponse = true
 		c.handleCommand(resp, cmd, reply, ids, st, emit)
+		if len(st.upload) > 0 {
+			// A large object is now being uploaded; OMA DM forbids other
+			// commands or Results between its chunks, so stop here and let
+			// the remaining server commands be answered after it completes.
+			break
+		}
 	}
 
 	if !resp.Body.Final {
@@ -97,11 +110,36 @@ func (c *Device) answer(resp *syncml.Message, st *sessionState) (*syncml.Message
 			&syncml.Alert{CmdID: "2", Data: syncml.AlertNextMessage.Wire()}}
 		return reply, false, nil
 	}
+	if len(st.upload) > 0 {
+		reply.Body.Final = false
+		return reply, false, nil
+	}
 	if !needsResponse {
 		return nil, true, nil
 	}
 	reply.Body.Final = true
 	return reply, false, nil
+}
+
+// emitUpload appends the next Get-result chunk, with the owed Status when the
+// last chunk goes out, and sets Final accordingly.
+func (c *Device) emitUpload(reply *syncml.Message, ids *syncml.CmdIDs, st *sessionState) {
+	chunk := st.upload[0]
+	st.upload = st.upload[1:]
+	reply.Body.Commands = append(reply.Body.Commands, &syncml.Results{
+		CmdID: ids.Next(), MsgRef: st.uploadRef.msgRef, CmdRef: st.uploadRef.cmdRef, Cmd: syncml.CmdGet,
+		Items: []syncml.Item{chunk},
+	})
+	if len(st.upload) == 0 {
+		reply.Body.Commands = append(reply.Body.Commands, &syncml.Status{
+			CmdID: ids.Next(), MsgRef: st.uploadRef.msgRef, CmdRef: st.uploadRef.cmdRef, Cmd: syncml.CmdGet,
+			Data: syncml.Data{Value: syncml.StatusOK.Wire()},
+		})
+		st.uploadGet = nil
+		reply.Body.Final = true
+		return
+	}
+	reply.Body.Final = false
 }
 
 // reAuth rebuilds package 1 with credentials after a challenge.
@@ -127,15 +165,27 @@ func (c *Device) handleCommand(req *syncml.Message, cmd syncml.Command, reply *s
 		}
 		status := syncml.StatusOK
 		for _, it := range b.Items {
-			if v, ok := c.Tree[it.Target]; ok {
-				reply.Body.Commands = append(reply.Body.Commands, &syncml.Results{
-					CmdID: ids.Next(), MsgRef: req.Header.MsgID, CmdRef: b.CmdID, Cmd: syncml.CmdGet,
-					Items: []syncml.Item{{Source: it.Target, Meta: &syncml.Meta{Format: syncml.FormatChr}, Data: &syncml.Data{Value: v}}},
-				})
-				st.transcript.Results = append(st.transcript.Results, it.Target)
-			} else {
+			v, ok := c.Tree[it.Target]
+			if !ok {
 				status = syncml.StatusNotFound
+				continue
 			}
+			st.transcript.Results = append(st.transcript.Results, it.Target)
+			item := syncml.Item{Source: it.Target, Meta: &syncml.Meta{Format: syncml.FormatChr}, Data: &syncml.Data{Value: v}}
+			if c.UploadChunkSize > 0 && len(v) > c.UploadChunkSize {
+				chunks, err := syncml.SplitItem(item, c.UploadChunkSize)
+				if err == nil && len(chunks) > 1 {
+					st.upload = chunks
+					st.uploadGet = cmd
+					st.uploadRef.msgRef, st.uploadRef.cmdRef = req.Header.MsgID, b.CmdID
+					c.emitUpload(reply, ids, st)
+					return // the Status is sent with the last chunk
+				}
+			}
+			reply.Body.Commands = append(reply.Body.Commands, &syncml.Results{
+				CmdID: ids.Next(), MsgRef: req.Header.MsgID, CmdRef: b.CmdID, Cmd: syncml.CmdGet,
+				Items: []syncml.Item{item},
+			})
 		}
 		c.status(req, cmd, reply, ids, st, status)
 	case *syncml.Add:

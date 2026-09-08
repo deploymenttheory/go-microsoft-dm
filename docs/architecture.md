@@ -110,6 +110,9 @@ unless an object is still going out. The command builders refuse the batches the
 refuses (a nested Atomic, a Get inside an Atomic, an Add then Replace on one node, mixed scope).
 `Handler` is the non-chunking HTTP adapter. Authentication, the queue and session state are
 interfaces the storage tier implements; results are stored per command, never as raw envelopes.
+`AcknowledgedValues` and `Diff` let a caller enqueue only the settings that changed since the
+device last acknowledged them, so a compliant device receives no commands; `NewUnenroll` builds
+the unenroll `Exec`.
 
 `pki/ca` is the issuer: a policy-driven signer that never back-dates, built from memory, PEM
 or files, or generated. `pki/wstep` parses the client's PKCS#10 with a narrow relaxation for

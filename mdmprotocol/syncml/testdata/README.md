@@ -2,7 +2,6 @@
 
 Every file is a message or fragment taken from a primary source, unchanged except for
 whitespace where noted. The source and date are in the file name and the table below.
-Phase 7 adds SyncMLViewer captures from a real 26100 client under `captures/`.
 
 | File | Source | Notes |
 |---|---|---|

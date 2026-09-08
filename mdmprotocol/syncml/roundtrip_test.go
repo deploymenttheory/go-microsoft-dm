@@ -203,9 +203,21 @@ func TestLearnSamplesTolerated(t *testing.T) {
 	}
 
 	// The MsiInstallJob document inside Exec/Data survives verbatim.
+	// The same document is provided in both SYNCML namespaces; the 1.2 form
+	// decodes with the 1.2 namespace recorded.
+	e12, err := syncml.Unmarshal(fixture(t, "learn-edam-add-exec-msiinstalljob-1.2.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if e12.Namespace != syncml.NamespaceSyncML12 {
+		t.Errorf("1.2 EDAM namespace = %q", e12.Namespace)
+	}
 	e, err := syncml.Unmarshal(fixture(t, "learn-edam-add-exec-msiinstalljob.xml"))
 	if err != nil {
 		t.Fatal(err)
+	}
+	if e.Namespace != syncml.NamespaceSyncML11 {
+		t.Errorf("1.1 EDAM namespace = %q", e.Namespace)
 	}
 	ex := e.Body.Commands[1].(*syncml.Exec)
 	if ex.CmdID != "67890" || !strings.HasPrefix(ex.Items[0].Data.XML, `<MsiInstallJob id="{9BD4F7CD-880A-40B5-B74C-1BEECB51E596}">`) || !strings.HasSuffix(ex.Items[0].Data.XML, "</MsiInstallJob>") {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/syncml"
 	"github.com/deploymenttheory/go-microsoft-dm/schema/csp"
+	"github.com/deploymenttheory/go-microsoft-dm/schema/csp/dmclient"
 	"github.com/deploymenttheory/go-microsoft-dm/schema/validation"
 )
 
@@ -367,4 +368,21 @@ func Check(reg *csp.Registry, c *Command) error {
 		return fmt.Errorf("%w: %w", ErrCommand, errors.Join(errs...))
 	}
 	return nil
+}
+
+// NewUnenroll builds the Exec that unenrolls one management provider
+// (MS-MDM: Exec on DMClient/Provider/{ID}/Unenroll). The client ends the
+// enrollment and, on a user-initiated unenroll, sends a 1226 alert which the
+// session engine turns into an Unenrolled hook.
+func NewUnenroll(providerID string) (*Command, error) {
+	if providerID == "" {
+		return nil, fmt.Errorf("%w: Unenroll needs a provider id", ErrCommand)
+	}
+	return NewExec(dmclient.DeviceProviderUnenroll(providerID), "")
+}
+
+// NewUnenrollDevice builds the Exec on the device-wide unenroll node
+// (./Device/Vendor/MSFT/DMClient/Unenroll).
+func NewUnenrollDevice() (*Command, error) {
+	return NewExec(dmclient.DeviceUnenroll, "")
 }
