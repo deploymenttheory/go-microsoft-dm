@@ -11,7 +11,8 @@ import (
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/mdm"
 	"github.com/deploymenttheory/go-microsoft-dm/storage"
 
-	_ "github.com/go-sql-driver/mysql" // mysql driver
+	"github.com/go-sql-driver/mysql"   // mysql driver and error type
+	"github.com/jackc/pgx/v5/pgconn"   // postgres error type
 	_ "github.com/jackc/pgx/v5/stdlib" // postgres driver (pgx stdlib)
 	_ "modernc.org/sqlite"             // pure-Go sqlite driver
 )
@@ -145,7 +146,29 @@ func boolInt(b bool) int64 {
 
 // tx runs fn in a transaction, committing on success and rolling back on
 // error.
+// tx runs fn in a transaction, retrying a bounded number of times when the
+// database reports a transient deadlock or serialization failure. PostgreSQL
+// and MySQL can abort one of two concurrent write transactions this way (the
+// per-device sequence counter is a hot row); the caller's work is idempotent
+// on retry because a failed transaction rolls back entirely. Non-transient
+// errors, including ErrConflict, are returned on the first attempt.
 func (s *conn) tx(ctx context.Context, fn func(*sql.Tx) error) error {
+	const maxAttempts = 10
+	var err error
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if err = s.txOnce(ctx, fn); err == nil || !isRetriable(err) {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(time.Duration(attempt+1) * time.Millisecond):
+		}
+	}
+	return err
+}
+
+func (s *conn) txOnce(ctx context.Context, fn func(*sql.Tx) error) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("sqlstore: begin: %w", err)
@@ -155,6 +178,21 @@ func (s *conn) tx(ctx context.Context, fn func(*sql.Tx) error) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+// isRetriable reports a transient deadlock or serialization failure that a
+// transaction can safely retry: MySQL 1213 (deadlock) and 1205 (lock wait
+// timeout), PostgreSQL 40001 (serialization_failure) and 40P01 (deadlock).
+func isRetriable(err error) bool {
+	var me *mysql.MySQLError
+	if errors.As(err, &me) {
+		return me.Number == 1213 || me.Number == 1205
+	}
+	var pe *pgconn.PgError
+	if errors.As(err, &pe) {
+		return pe.Code == "40001" || pe.Code == "40P01"
+	}
+	return false
 }
 
 // rebindRow runs a single-row query inside a transaction with the dialect's

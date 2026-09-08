@@ -2,12 +2,16 @@ package sqlstore
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/mdm"
 	"github.com/deploymenttheory/go-microsoft-dm/paging"
 	"github.com/deploymenttheory/go-microsoft-dm/storage"
+
+	"github.com/go-sql-driver/mysql"
 )
 
 var ft0 = time.Date(2026, 9, 8, 12, 0, 0, 0, time.UTC)
@@ -171,4 +175,35 @@ func newStoreT(t *testing.T) *Store {
 	}
 	t.Cleanup(func() { _ = s.Close() })
 	return s
+}
+
+func TestTxRetriesTransientErrors(t *testing.T) {
+	s := newStoreT(t)
+	// A transient deadlock is retried until fn succeeds.
+	calls := 0
+	err := s.tx(context.Background(), func(*sql.Tx) error {
+		calls++
+		if calls < 3 {
+			return &mysql.MySQLError{Number: 1213}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("tx after transient errors: %v", err)
+	}
+	if calls != 3 {
+		t.Errorf("fn called %d times, want 3", calls)
+	}
+	// A non-retriable error returns on the first attempt.
+	calls = 0
+	err = s.tx(context.Background(), func(*sql.Tx) error {
+		calls++
+		return ErrDialect
+	})
+	if !errors.Is(err, ErrDialect) {
+		t.Errorf("err = %v, want ErrDialect", err)
+	}
+	if calls != 1 {
+		t.Errorf("non-retriable error retried: %d calls", calls)
+	}
 }

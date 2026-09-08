@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestDialectFor(t *testing.T) {
@@ -90,5 +91,31 @@ func TestIsDuplicateIndex(t *testing.T) {
 	}
 	if isDuplicateIndex(&mysql.MySQLError{Number: 1146, Message: "table doesn't exist"}) {
 		t.Error("1146 reported as duplicate index")
+	}
+}
+
+func TestIsRetriable(t *testing.T) {
+	t.Parallel()
+	if isRetriable(nil) {
+		t.Error("nil is not retriable")
+	}
+	if isRetriable(ErrDialect) {
+		t.Error("a plain error is not retriable")
+	}
+	for _, n := range []uint16{1213, 1205} {
+		if !isRetriable(&mysql.MySQLError{Number: n}) {
+			t.Errorf("mysql %d should be retriable", n)
+		}
+	}
+	if isRetriable(&mysql.MySQLError{Number: 1062}) {
+		t.Error("mysql 1062 (duplicate entry) is not retriable")
+	}
+	for _, c := range []string{"40001", "40P01"} {
+		if !isRetriable(&pgconn.PgError{Code: c}) {
+			t.Errorf("postgres %s should be retriable", c)
+		}
+	}
+	if isRetriable(&pgconn.PgError{Code: "23505"}) {
+		t.Error("postgres 23505 (unique violation) is not retriable")
 	}
 }
