@@ -57,10 +57,22 @@ test:
 	$(GO) test -race -shuffle=on -count=1 -cover -coverpkg=$(LIB_MOD)/... $(PKGS) -args -test.gocoverdir=$(PWD)/$(COVER_DIR)/unit
 	cd $(SERVER_DIR) && $(GO) test -race -shuffle=on -count=1 -cover -coverpkg=$(ALL_PKGS) ./... -args -test.gocoverdir=$(PWD)/$(COVER_DIR)/unit
 
+## testdb-up: start local PostgreSQL and MySQL in Docker and print the DSNs to export
+testdb-up:
+	@docker run -d --rm --name dm-postgres -e POSTGRES_USER=dm -e POSTGRES_PASSWORD=dm -e POSTGRES_DB=dm -p 5432:5432 postgres:16 >/dev/null
+	@docker run -d --rm --name dm-mysql -e MYSQL_ROOT_PASSWORD=dm -e MYSQL_DATABASE=dm -p 3306:3306 mysql:8 >/dev/null
+	@echo 'export TEST_POSTGRES_DSN="postgres://dm:dm@localhost:5432/dm?sslmode=disable"'
+	@echo 'export TEST_MYSQL_DSN="root:dm@tcp(localhost:3306)/dm?parseTime=true&multiStatements=true"'
+	@echo '# wait a few seconds for the databases to accept connections, then: make test-storage'
+
+## testdb-down: stop the local test databases
+testdb-down:
+	@docker rm -f dm-postgres dm-mysql >/dev/null 2>&1 || true
+
 ## test-storage: storage contract suites against SQL backends (Phase 6; needs TEST_POSTGRES_DSN / TEST_MYSQL_DSN)
 test-storage:
 	@rm -rf $(COVER_DIR)/storage && mkdir -p $(COVER_DIR)/storage
-	@cd $(SERVER_DIR) && if $(GO) list -tags integration $(INTEGRATION_PKGS) >/dev/null 2>&1 && ls sqlstore/*/*_test.go >/dev/null 2>&1; then \
+	@cd $(SERVER_DIR) && if $(GO) list -tags integration $(INTEGRATION_PKGS) >/dev/null 2>&1 && ls sqlstore/integration_test.go >/dev/null 2>&1; then \
 		$(GO) test -race -count=1 -tags integration -cover -coverpkg=$(ALL_PKGS) $(INTEGRATION_PKGS) -args -test.gocoverdir=$(PWD)/$(COVER_DIR)/storage; \
 	else echo "no storage suites yet"; fi
 
@@ -124,4 +136,4 @@ ci: lint verify test fuzz-smoke coverage
 clean:
 	rm -rf $(COVER_DIR)
 
-.PHONY: help tools generate verify ddf-diff lint test test-storage test-conformance test-e2e test-conformance-guest fuzz-smoke fuzz coverage vuln refs refs-activity specs ddf ci clean
+.PHONY: help tools generate verify ddf-diff lint test testdb-up testdb-down test-storage test-conformance test-e2e test-conformance-guest fuzz-smoke fuzz coverage vuln refs refs-activity specs ddf ci clean

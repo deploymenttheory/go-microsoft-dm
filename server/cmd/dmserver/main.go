@@ -1,23 +1,75 @@
-// Command dmserver is the reference server for go-microsoft-dm.
-//
-// # Design
-//
-// The binary is wiring only; behaviour lives in server/internal/app and the
-// packages it composes. Phase 6 of the implementation plan fills it. Until then
-// it exits with status 2 so nothing mistakes the placeholder for a server.
-//
-// # References
-//
-//   - Decision record 0001: https://github.com/deploymenttheory/go-microsoft-dm/blob/main/docs/research/decisions/0001-architecture.md
-//   - Implementation plan, Phase 6: https://github.com/deploymenttheory/go-microsoft-dm/blob/main/docs/implementation_plan.md
+// Command dmserver runs the reference Windows MDM server.
 package main
 
 import (
-	"fmt"
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/deploymenttheory/go-microsoft-dm/server/internal/app"
 )
 
 func main() {
-	fmt.Fprintln(os.Stderr, "dmserver: not implemented until Phase 6 of the implementation plan")
-	os.Exit(2)
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	if err := run(logger); err != nil {
+		logger.Error("dmserver", "err", err)
+		os.Exit(1)
+	}
+}
+
+func run(logger *slog.Logger) error {
+	cfg, err := app.Load()
+	if err != nil {
+		return err
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	a, err := app.New(ctx, cfg, app.Options{Log: func(method, path string, status int) {
+		logger.Info("request", "method", method, "path", path, "status", status)
+	}})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = a.Close() }()
+
+	if cfg.Memory {
+		logger.Warn("using an ephemeral in-memory store; state is lost on exit")
+	}
+	if cfg.CACert == "" {
+		logger.Warn("using an ephemeral self-signed enrollment CA; set DM_CA_CERT and DM_CA_KEY to persist it")
+	}
+
+	srv := &http.Server{
+		Addr:              cfg.Listen,
+		Handler:           a.Handler,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	errc := make(chan error, 1)
+	go func() {
+		logger.Info("listening", "addr", cfg.Listen, "tls", cfg.TLSCert != "", "base_url", cfg.BaseURL)
+		if cfg.TLSCert != "" && cfg.TLSKey != "" {
+			errc <- srv.ListenAndServeTLS(cfg.TLSCert, cfg.TLSKey)
+		} else {
+			errc <- srv.ListenAndServe()
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		logger.Info("shutting down")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		return srv.Shutdown(shutdownCtx)
+	case err := <-errc:
+		if errors.Is(err, http.ErrServerClosed) {
+			return nil
+		}
+		return err
+	}
 }
