@@ -39,7 +39,7 @@ func (s *Service) recordPackageOne(ctx context.Context, sess *Session, req *sync
 	if sess.Closed {
 		return nil // the session is ending; do not queue new reads
 	}
-	// The first session queues the standard reads once.
+	// Device details are read once; push channel/status are read every session.
 	return s.queueFirstSessionReads(ctx, sess)
 }
 

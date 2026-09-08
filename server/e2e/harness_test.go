@@ -44,7 +44,7 @@ type harness struct {
 // newHarness starts the server on the store named by E2E_STORE (default
 // sqlite): "sqlite" uses a temp file, "inmem"/"memory" an ephemeral sqlite,
 // "postgres" the DSN in E2E_POSTGRES_DSN (skipping when unset).
-func newHarness(t *testing.T) *harness {
+func newHarness(t *testing.T, configure ...func(*app.Config)) *harness {
 	t.Helper()
 	cfg := app.Config{
 		BaseURL: "https://placeholder", ProviderID: "e2e", Name: "e2e",
@@ -66,6 +66,9 @@ func newHarness(t *testing.T) *harness {
 		t.Fatalf("unknown E2E_STORE %q", store)
 	}
 
+	for _, change := range configure {
+		change(&cfg)
+	}
 	lazy := &lazyHandler{}
 	srv := httptest.NewTLSServer(lazy)
 	t.Cleanup(srv.Close)

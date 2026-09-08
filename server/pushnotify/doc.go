@@ -1,9 +1,11 @@
-// Package pushnotify drives WNS push from server-side change detection.
+// Package pushnotify tracks enrollment-bound channels and requests WNS wakes.
 //
 // # Design
 //
-// Phase 8 of the implementation plan fills this package. Until Phase 8 the
-// package is empty.
+// A queue observer persists successful channel/status reads. Service records
+// WNS outcomes, suppresses dead or aged channels, and offers explicit
+// missed-check-in checks. Callers schedule checks and request wakes; no hidden
+// worker changes polling or treats WNS acceptance as device acknowledgement.
 //
 // # References
 //

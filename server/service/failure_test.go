@@ -53,7 +53,9 @@ func (f *fakeStore) ListByHWDevID(context.Context, string) ([]storage.Enrollment
 func (f *fakeStore) SetState(context.Context, string, storage.State, time.Time) error {
 	return f.setStateErr
 }
-func (f *fakeStore) TouchLastSeen(context.Context, string, time.Time) error { return nil }
+func (f *fakeStore) TouchLastSeen(context.Context, string, time.Time) error {
+	return f.e("TouchLastSeen")
+}
 func (f *fakeStore) List(context.Context, storage.EnrollmentQuery, paging.Page) (paging.Result[storage.Enrollment], error) {
 	return paging.Result[storage.Enrollment]{}, nil
 }
@@ -110,8 +112,14 @@ func TestCredentialSourceStoreFailure(t *testing.T) {
 func TestHooks(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
+	for _, method := range []string{"Get", "TouchLastSeen"} {
+		h := &hooks{store: &fakeStore{active: &storage.Enrollment{Serial: "1"}, fail: map[string]error{method: errBoom}}, clock: clock.Real{}}
+		if err := h.PackageOne(ctx, "d", "1", mdm.Facts{}); !errors.Is(err, errBoom) {
+			t.Fatalf("%s failure: %v", method, err)
+		}
+	}
 	// ClientEvent, GenericAlert and PackageOne happy paths.
-	fs := &fakeStore{}
+	fs := &fakeStore{active: &storage.Enrollment{Serial: "1"}}
 	h := &hooks{store: fs, clock: clock.NewFake(time.Now())}
 	if err := h.PackageOne(ctx, "d", "1", mdm.Facts{DevInfo: map[string]string{"Man": "x"}, LoginStatus: "user"}); err != nil {
 		t.Fatal(err)
@@ -123,10 +131,10 @@ func TestHooks(t *testing.T) {
 		t.Fatal(err)
 	}
 	// PackageOne surfaces a facts-store failure and a log failure.
-	if err := (&hooks{store: &fakeStore{fail: map[string]error{"PutFacts": errBoom}}, clock: clock.Real{}}).PackageOne(ctx, "d", "1", mdm.Facts{}); !errors.Is(err, errBoom) {
+	if err := (&hooks{store: &fakeStore{active: &storage.Enrollment{Serial: "1"}, fail: map[string]error{"PutFacts": errBoom}}, clock: clock.Real{}}).PackageOne(ctx, "d", "1", mdm.Facts{}); !errors.Is(err, errBoom) {
 		t.Errorf("facts fail = %v", err)
 	}
-	if err := (&hooks{store: &fakeStore{fail: map[string]error{"LogEvent": errBoom}}, clock: clock.Real{}}).PackageOne(ctx, "d", "1", mdm.Facts{}); !errors.Is(err, errBoom) {
+	if err := (&hooks{store: &fakeStore{active: &storage.Enrollment{Serial: "1"}, fail: map[string]error{"LogEvent": errBoom}}, clock: clock.Real{}}).PackageOne(ctx, "d", "1", mdm.Facts{}); !errors.Is(err, errBoom) {
 		t.Errorf("log fail = %v", err)
 	}
 	// Unenrolled: no active enrollment logs and returns.

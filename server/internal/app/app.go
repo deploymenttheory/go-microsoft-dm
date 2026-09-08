@@ -10,6 +10,7 @@ import (
 	"github.com/deploymenttheory/go-microsoft-dm/pki/ca"
 	"github.com/deploymenttheory/go-microsoft-dm/schema/registry"
 	"github.com/deploymenttheory/go-microsoft-dm/server/httpapi"
+	"github.com/deploymenttheory/go-microsoft-dm/server/pushnotify"
 	"github.com/deploymenttheory/go-microsoft-dm/server/service"
 	"github.com/deploymenttheory/go-microsoft-dm/server/sqlstore"
 )
@@ -25,6 +26,7 @@ type App struct {
 	CA      *ca.Local
 	// Config is the effective configuration.
 	Config Config
+	Push   *pushnotify.Service
 
 	closers []func() error
 }
@@ -41,6 +43,9 @@ type Options struct {
 func New(ctx context.Context, cfg Config, opts Options) (*App, error) {
 	if err := cfg.validate(); err != nil {
 		return nil, err
+	}
+	if cfg.ProviderID == "" {
+		cfg.ProviderID = "go-microsoft-dm"
 	}
 	clk := opts.Clock
 	if clk == nil {
@@ -67,13 +72,16 @@ func New(ctx context.Context, cfg Config, opts Options) (*App, error) {
 		BaseURL: cfg.BaseURL,
 		CA:      authority,
 		Store:   store,
-		Queue:   store.Queue(),
+		Queue: &pushnotify.TrackingQueue{
+			CommandQueue: store.Queue(), Store: store, ProviderID: cfg.ProviderID,
+		},
 		Authenticator: &service.StaticAuthenticator{
 			Users:    cfg.EnrollUsers,
 			AllowAny: cfg.EnrollAllowAny,
 		},
 		Registry:       reg,
 		ProviderID:     cfg.ProviderID,
+		PushPFN:        cfg.Push.PFN,
 		Name:           cfg.Name,
 		Clock:          clk,
 		AllowBasicAuth: false,
@@ -84,7 +92,17 @@ func New(ctx context.Context, cfg Config, opts Options) (*App, error) {
 	}
 	h := httpapi.New(svc)
 	h.Log = opts.Log
+	sender, err := cfg.Push.PushSender()
+	if err != nil {
+		_ = store.Close()
+		return nil, err
+	}
+	push := &pushnotify.Service{Store: store, Clock: clk}
+	if sender != nil {
+		push.Sender = sender
+	}
 	return &App{
+		Push:    push,
 		Handler: h, Service: svc, Store: store, CA: authority, Config: cfg,
 		closers: []func() error{store.Close},
 	}, nil

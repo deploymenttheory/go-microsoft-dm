@@ -2,10 +2,11 @@
 //
 // # Design
 //
-// Phase 8 of the implementation plan fills this package: two token sources
-// (Partner Center and Entra), a raw-notification sender with the MDM headers,
-// and response classification. Poll policy lives in the provisioning
-// document, not here. Until Phase 8 the package is empty.
+// Token sources support Partner Center and Entra. The raw sender validates
+// Microsoft channel URLs, forbids redirects, refreshes a rejected token once,
+// and offers bounded retries for throttling and server failures. WNS acceptance
+// does not prove device check-in. Poll policy belongs to provisioning and the
+// reference server; no background workers or device state live in this package.
 //
 // # References
 //

@@ -34,6 +34,7 @@ var dbCounter atomic.Uint64
 func TestPostgresContract(t *testing.T) {
 	dsn := requireDSN(t, "TEST_POSTGRES_DSN")
 	newStore := freshDBFactory(t, sqlstore.Postgres, "pgx", dsn)
+	t.Run("PushChannel", func(t *testing.T) { runPushChannelLifecycle(t, newStore(t)) })
 	t.Run("Store", func(t *testing.T) {
 		storagetest.RunAll(t, func(t *testing.T) storage.Store { return newStore(t) })
 	})
@@ -48,6 +49,7 @@ func TestPostgresContract(t *testing.T) {
 func TestMySQLContract(t *testing.T) {
 	dsn := requireDSN(t, "TEST_MYSQL_DSN")
 	newStore := freshDBFactory(t, sqlstore.MySQL, "mysql", dsn)
+	t.Run("PushChannel", func(t *testing.T) { runPushChannelLifecycle(t, newStore(t)) })
 	t.Run("Store", func(t *testing.T) {
 		storagetest.RunAll(t, func(t *testing.T) storage.Store { return newStore(t) })
 	})

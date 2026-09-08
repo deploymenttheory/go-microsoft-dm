@@ -19,6 +19,8 @@ const (
 
 // Config is the reference server's configuration.
 type Config struct {
+	// Push configures optional WNS delivery and enrollment provisioning.
+	Push PushConfig
 	// Store is the backend: sqlite, postgres, mysql or memory.
 	Store sqlstore.Kind
 	// Memory selects an ephemeral in-memory sqlite (the "memory" role).
@@ -53,6 +55,7 @@ type Config struct {
 // Load reads the configuration from DM_* environment variables.
 func Load() (Config, error) {
 	c := Config{
+		Push:       loadPush(),
 		Store:      sqlstore.Kind(getenv("DM_STORE", "memory")),
 		DSN:        os.Getenv("DM_DSN"),
 		BaseURL:    getenv("DM_BASE_URL", "https://localhost:8443"),
@@ -80,6 +83,9 @@ func Load() (Config, error) {
 }
 
 func (c Config) validate() error {
+	if _, err := c.Push.PushSender(); err != nil {
+		return err
+	}
 	switch c.Store {
 	case sqlstore.SQLite, sqlstore.Postgres, sqlstore.MySQL:
 	default:

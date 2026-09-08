@@ -41,6 +41,8 @@ type ProvisionConfig struct {
 	Renew *wapprov.Renew
 	// Poll is the DMClient schedule; default wapprov.DefaultPoll.
 	Poll *wapprov.Poll
+	// PushPFN is the optional WNS package family name provisioned under DMClient.
+	PushPFN string
 	// Application tunes the w7 characteristic. ProviderID, Name, Address,
 	// ServerAuth and ClientAuth are filled from this config and the
 	// enrollment; the remaining fields are copied.
@@ -111,7 +113,7 @@ func (p *DefaultProvisioner) Provision(ctx context.Context, e *Enrollment) (*wap
 	if err != nil {
 		return nil, err
 	}
-	dmCfg := wapprov.DMClientConfig{ProviderID: p.cfg.ProviderID, EntDeviceName: e.Request.Context.DeviceName, Poll: p.cfg.Poll}
+	dmCfg := wapprov.DMClientConfig{ProviderID: p.cfg.ProviderID, EntDeviceName: e.Request.Context.DeviceName, Poll: p.cfg.Poll, PushPFN: p.cfg.PushPFN}
 	if e.Request.Context.EnrollmentType == EnrollmentTypeFull {
 		dmCfg.UPN = e.Request.Principal.UPN
 	}

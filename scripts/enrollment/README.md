@@ -134,3 +134,12 @@ record the native compatibility fix and its limits.
 ## Desktop conformance
 
 Use `Start -Capture` for the opt-in native recorder and `Probe -DeviceID <id>` for the fixed read-only capability queries. Experiment configuration, capture export and evidence limits are documented in [Windows host conformance](../../docs/testing/windows-host-conformance.md). Raw captures remain private in the ignored state directory. `make test-conformance-host` runs offline fixture and recorder checks; it does not modify the desktop.
+
+## WNS push
+
+Set the matching `DM_WNS_PFN`, `DM_WNS_CLIENT_ID` and `DM_WNS_CLIENT_SECRET`
+before starting the server and enrolling. `PushState` shows channel age, status
+and last authenticated activity without printing the channel URI. `Push` sends
+a wake request. `test-push.ps1` combines sending with session observation and
+Event 4603 evidence. See [Windows WNS validation](../../docs/testing/windows-wns-push.md)
+for both authentication modes, the opt-in native test and explicit skip conditions.

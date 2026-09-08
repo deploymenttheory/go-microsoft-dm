@@ -21,6 +21,13 @@ var _ mdm.Hooks = (*hooks)(nil)
 
 // PackageOne persists the device facts reported at session start.
 func (h *hooks) PackageOne(ctx context.Context, deviceID, sessionID string, f mdm.Facts) error {
+	e, err := h.store.Get(ctx, deviceID)
+	if err != nil {
+		return err
+	}
+	if err := h.store.TouchLastSeen(ctx, e.Serial, h.clock.Now()); err != nil {
+		return err
+	}
 	facts := sqlstore.Facts{
 		DeviceID: deviceID, DevInfo: f.DevInfo, LoginStatus: f.LoginStatus,
 		SyncType: f.SyncType, DevicePrepSync: f.DevicePrepSync, UpdatedAt: h.clock.Now(),

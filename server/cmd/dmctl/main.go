@@ -16,6 +16,7 @@ import (
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/mdm"
 	"github.com/deploymenttheory/go-microsoft-dm/paging"
 	"github.com/deploymenttheory/go-microsoft-dm/server/internal/app"
+	"github.com/deploymenttheory/go-microsoft-dm/server/pushnotify"
 	"github.com/deploymenttheory/go-microsoft-dm/server/sqlstore"
 	"github.com/deploymenttheory/go-microsoft-dm/storage"
 )
@@ -30,6 +31,9 @@ func main() {
 const usage = `usage: dmctl <command> [args]
 
 commands:
+	push <deviceID>             request a management session through WNS
+	push-state <deviceID>       show channel age/status and last check-in (no URI)
+	checkins <max-age>          log missing check-ins (duration, e.g. 24h)
   enrollments                 list enrollments
   facts <deviceID>            show a device's reported facts
   commands <deviceID>         list a device's queued commands
@@ -65,6 +69,51 @@ func run(args []string) error {
 	defer func() { _ = store.Close() }()
 
 	switch args[0] {
+	case "push-state":
+		return withDevice(args, func(id string) error {
+			e, err := store.Get(ctx, id)
+			if err != nil {
+				return err
+			}
+			channel, err := store.PushChannel(ctx, e.Serial)
+			if err != nil && !errors.Is(err, sqlstore.ErrNotFound) {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(struct {
+				LastSeen   time.Time            `json:"last_seen"`
+				Channel    sqlstore.PushChannel `json:"channel"`
+				HasChannel bool                 `json:"has_channel"`
+			}{e.LastSeenAt, channel, channel.URI != ""})
+		})
+	case "push":
+		return withDevice(args, func(id string) error {
+			sender, err := cfg.Push.PushSender()
+			if err != nil {
+				return err
+			}
+			if sender == nil {
+				return errors.New("configure DM_WNS_PFN, DM_WNS_CLIENT_ID and DM_WNS_CLIENT_SECRET")
+			}
+			push := &pushnotify.Service{Store: store, Sender: sender}
+			result, err := push.Wake(ctx, id)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(result)
+		})
+	case "checkins":
+		if len(args) != 2 {
+			return errors.New("usage: dmctl checkins <max-age>")
+		}
+		age, err := time.ParseDuration(args[1])
+		if err != nil {
+			return err
+		}
+		alerts, err := (&pushnotify.Service{Store: store}).CheckIns(ctx, age)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(alerts)
 	case "enrollments":
 		return listEnrollments(ctx, store)
 	case "facts":
