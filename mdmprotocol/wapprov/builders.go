@@ -117,7 +117,7 @@ func certEntries(ders [][]byte) []Characteristic {
 }
 
 // RootCATrustedCertificates builds the RootCATrustedCertificates
-// characteristic of MS-MDE2 2.2.9.4 for roots in DER, under Root/System.
+// characteristic of MS-MDE2 2.2.9.4 for roots in DER, under Root/CertHash.
 func RootCATrustedCertificates(roots [][]byte) (Characteristic, error) {
 	if len(roots) == 0 {
 		return Characteristic{}, fmt.Errorf("%w: RootCATrustedCertificates needs a certificate", ErrInvalid)
@@ -128,7 +128,7 @@ func RootCATrustedCertificates(roots [][]byte) (Characteristic, error) {
 		}
 	}
 	return Characteristic{Type: TypeRootCATrustedCertificates, Children: []Characteristic{
-		{Type: "Root", Children: []Characteristic{{Type: "System", Children: certEntries(roots)}}},
+		{Type: "Root", Children: certEntries(roots)},
 	}}, nil
 }
 

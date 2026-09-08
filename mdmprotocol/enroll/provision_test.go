@@ -93,7 +93,7 @@ func TestProvisionShapes(t *testing.T) {
 	if cs.Path("My", "System", wapprov.Thumbprint(e.Certificate.Raw)) == nil {
 		t.Error("client under My/System")
 	}
-	if doc.Find(wapprov.TypeRootCATrustedCertificates).Path("Root", "System", wapprov.Thumbprint(e.Chain[1].Raw)) == nil {
+	if doc.Find(wapprov.TypeRootCATrustedCertificates).Path("Root", wapprov.Thumbprint(e.Chain[1].Raw)) == nil {
 		t.Error("RootCATrustedCertificates")
 	}
 	app := doc.Find(wapprov.TypeApplication)

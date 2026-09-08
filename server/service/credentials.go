@@ -38,12 +38,19 @@ func (c *credentialSource) Credentials(ctx context.Context, e *enroll.Enrollment
 	if err != nil {
 		return wapprov.Credential{}, wapprov.Credential{}, fmt.Errorf("service: credential: %w", err)
 	}
+	// Native Windows enrollment needs initial nonces for both DIGEST entries.
+	// Keep this compatibility choice in the server; AAUTHDATA remains optional
+	// in the protocol library. Each credential receives independent random bytes.
+	nonces := make([]byte, 32)
+	if _, err := randRead(nonces); err != nil {
+		return wapprov.Credential{}, wapprov.Credential{}, fmt.Errorf("service: credential nonce: %w", err)
+	}
 	if err := c.store.PutMDMCredential(ctx, storage.MDMCredential{
 		DeviceID: deviceID, AuthType: mdm.AuthDigest, CredentialHash: syncml.CredentialHash(name, serverSecret),
 	}); err != nil {
 		return wapprov.Credential{}, wapprov.Credential{}, fmt.Errorf("service: store credential: %w", err)
 	}
-	server := wapprov.Credential{Type: wapprov.AuthDigest, Name: name, Secret: serverSecret}
-	client := wapprov.Credential{Type: wapprov.AuthDigest, Secret: clientSecret}
+	server := wapprov.Credential{Type: wapprov.AuthDigest, Name: name, Secret: serverSecret, Nonce: nonces[:16]}
+	client := wapprov.Credential{Type: wapprov.AuthDigest, Secret: clientSecret, Nonce: nonces[16:]}
 	return server, client, nil
 }

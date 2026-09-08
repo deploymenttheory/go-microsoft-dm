@@ -89,7 +89,7 @@ func TestCertificateStoreRejects(t *testing.T) {
 func TestRootCATrustedCertificates(t *testing.T) {
 	t.Parallel()
 	c, err := RootCATrustedCertificates([][]byte{rootDER})
-	if err != nil || c.Path("Root", "System", Thumbprint(rootDER)) == nil {
+	if err != nil || c.Path("Root", Thumbprint(rootDER)) == nil {
 		t.Errorf("%+v, %v", c, err)
 	}
 	if _, err := RootCATrustedCertificates(nil); !errors.Is(err, ErrInvalid) {
@@ -97,6 +97,23 @@ func TestRootCATrustedCertificates(t *testing.T) {
 	}
 	if _, err := RootCATrustedCertificates([][]byte{nil}); !errors.Is(err, ErrInvalid) {
 		t.Error("empty accepted")
+	}
+}
+
+// This CSP's management tree differs from CertificateStore/Root/System.
+func TestRootCATrustedCertificatesHasNoSystemContainer(t *testing.T) {
+	t.Parallel()
+	c, err := RootCATrustedCertificates([][]byte{rootDER})
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := c.Child("Root")
+	if root == nil || len(root.Children) != 1 || root.Child("System") != nil {
+		t.Fatal("MS-MDE2 2.2.9.4 requires Root/CertHash without a System container")
+	}
+	cert := root.Child(Thumbprint(rootDER))
+	if cert == nil || cert.Value("EncodedCertificate") != base64.StdEncoding.EncodeToString(rootDER) {
+		t.Fatal("missing base64 DER at Root/CertHash/EncodedCertificate")
 	}
 }
 
@@ -120,7 +137,7 @@ func TestApplicationShape(t *testing.T) {
 	want := map[string]string{
 		"APPID": "w7", "PROVIDER-ID": "TestServer", "NAME": "Test", "ADDR": "https://mdm.example/ManagementServer/MDM.svc",
 		"PROTOVER": "1.2", "CONNRETRYFREQ": "6", "INITIALBACKOFFTIME": "30000", "MAXBACKOFFTIME": "120000",
-		"DEFAULTENCODING": "application/vnd.syncml.dm+xml",
+		"DEFAULTENCODING":             "application/vnd.syncml.dm+xml",
 		"SSLCLIENTCERTSEARCHCRITERIA": "Subject=CN%3DTester,O%3DMicrosoft&Stores=My%5CUser",
 	}
 	for k, v := range want {
