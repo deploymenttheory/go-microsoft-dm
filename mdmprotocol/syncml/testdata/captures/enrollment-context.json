@@ -1,0 +1,548 @@
+[
+  {
+    "label": "baseline",
+    "at": "2026-09-08T12:45:16.2221755Z",
+    "advertised_version": "3.0",
+    "items": [
+      {
+        "name": "UXInitiated",
+        "characters": 4
+      },
+      {
+        "name": "HWDevID",
+        "characters": 64
+      },
+      {
+        "name": "Locale",
+        "characters": 5
+      },
+      {
+        "name": "TargetedUserLoggedIn",
+        "characters": 4
+      },
+      {
+        "name": "OSEdition",
+        "characters": 1
+      },
+      {
+        "name": "DeviceName",
+        "characters": 7
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "DeviceID",
+        "characters": 32
+      },
+      {
+        "name": "EnrollmentType",
+        "characters": 4,
+        "value": "Full"
+      },
+      {
+        "name": "DeviceType",
+        "characters": 17
+      },
+      {
+        "name": "OSVersion",
+        "characters": 15,
+        "value": "10.0.26200.9278"
+      },
+      {
+        "name": "ApplicationVersion",
+        "characters": 15,
+        "value": "10.0.26200.9279"
+      },
+      {
+        "name": "NotInOobe",
+        "characters": 5
+      },
+      {
+        "name": "Manufacturer",
+        "characters": 29
+      },
+      {
+        "name": "DeviceModel",
+        "characters": 17
+      },
+      {
+        "name": "SerialNumber",
+        "characters": 14
+      },
+      {
+        "name": "RequestVersion",
+        "characters": 3,
+        "value": "9.0"
+      },
+      {
+        "name": "AttestationStatus",
+        "characters": 84,
+        "value": "Status=AttestationResultNoAttestation;AttestationErrorMsg=No AIK algorithms provided"
+      },
+      {
+        "name": "AttestationStatusHResult",
+        "characters": 10,
+        "value": "0x80070057"
+      }
+    ]
+  },
+  {
+    "label": "enrollment5",
+    "at": "2026-09-08T13:50:51.1636932Z",
+    "advertised_version": "5.0",
+    "items": [
+      {
+        "name": "AIKPub",
+        "characters": 380
+      },
+      {
+        "name": "AIKAttestationClaim",
+        "characters": 1624
+      },
+      {
+        "name": "UXInitiated",
+        "characters": 4
+      },
+      {
+        "name": "HWDevID",
+        "characters": 64
+      },
+      {
+        "name": "Locale",
+        "characters": 5
+      },
+      {
+        "name": "TargetedUserLoggedIn",
+        "characters": 4
+      },
+      {
+        "name": "OSEdition",
+        "characters": 1
+      },
+      {
+        "name": "DeviceName",
+        "characters": 7
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "DeviceID",
+        "characters": 32
+      },
+      {
+        "name": "EnrollmentType",
+        "characters": 4,
+        "value": "Full"
+      },
+      {
+        "name": "DeviceType",
+        "characters": 17
+      },
+      {
+        "name": "OSVersion",
+        "characters": 15,
+        "value": "10.0.26200.9278"
+      },
+      {
+        "name": "ApplicationVersion",
+        "characters": 15,
+        "value": "10.0.26200.9279"
+      },
+      {
+        "name": "NotInOobe",
+        "characters": 5
+      },
+      {
+        "name": "Manufacturer",
+        "characters": 29
+      },
+      {
+        "name": "DeviceModel",
+        "characters": 17
+      },
+      {
+        "name": "SerialNumber",
+        "characters": 14
+      },
+      {
+        "name": "RequestVersion",
+        "characters": 3,
+        "value": "5.0"
+      }
+    ]
+  },
+  {
+    "label": "enrollment9",
+    "at": "2026-09-08T13:58:44.2316149Z",
+    "advertised_version": "9.0",
+    "items": [
+      {
+        "name": "UXInitiated",
+        "characters": 4
+      },
+      {
+        "name": "HWDevID",
+        "characters": 64
+      },
+      {
+        "name": "Locale",
+        "characters": 5
+      },
+      {
+        "name": "TargetedUserLoggedIn",
+        "characters": 4
+      },
+      {
+        "name": "OSEdition",
+        "characters": 1
+      },
+      {
+        "name": "DeviceName",
+        "characters": 7
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "DeviceID",
+        "characters": 32
+      },
+      {
+        "name": "EnrollmentType",
+        "characters": 4,
+        "value": "Full"
+      },
+      {
+        "name": "DeviceType",
+        "characters": 17
+      },
+      {
+        "name": "OSVersion",
+        "characters": 15,
+        "value": "10.0.26200.9278"
+      },
+      {
+        "name": "ApplicationVersion",
+        "characters": 15,
+        "value": "10.0.26200.9279"
+      },
+      {
+        "name": "NotInOobe",
+        "characters": 5
+      },
+      {
+        "name": "Manufacturer",
+        "characters": 29
+      },
+      {
+        "name": "DeviceModel",
+        "characters": 17
+      },
+      {
+        "name": "SerialNumber",
+        "characters": 14
+      },
+      {
+        "name": "RequestVersion",
+        "characters": 3,
+        "value": "9.0"
+      },
+      {
+        "name": "AttestationStatus",
+        "characters": 84,
+        "value": "Status=AttestationResultNoAttestation;AttestationErrorMsg=No AIK algorithms provided"
+      },
+      {
+        "name": "AttestationStatusHResult",
+        "characters": 10,
+        "value": "0x80070057"
+      }
+    ]
+  },
+  {
+    "label": "poll-zero",
+    "at": "2026-09-08T14:06:30.2865386Z",
+    "advertised_version": "3.0",
+    "items": [
+      {
+        "name": "UXInitiated",
+        "characters": 4
+      },
+      {
+        "name": "HWDevID",
+        "characters": 64
+      },
+      {
+        "name": "Locale",
+        "characters": 5
+      },
+      {
+        "name": "TargetedUserLoggedIn",
+        "characters": 4
+      },
+      {
+        "name": "OSEdition",
+        "characters": 1
+      },
+      {
+        "name": "DeviceName",
+        "characters": 7
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "MAC",
+        "characters": 17
+      },
+      {
+        "name": "DeviceID",
+        "characters": 32
+      },
+      {
+        "name": "EnrollmentType",
+        "characters": 4,
+        "value": "Full"
+      },
+      {
+        "name": "DeviceType",
+        "characters": 17
+      },
+      {
+        "name": "OSVersion",
+        "characters": 15,
+        "value": "10.0.26200.9278"
+      },
+      {
+        "name": "ApplicationVersion",
+        "characters": 15,
+        "value": "10.0.26200.9279"
+      },
+      {
+        "name": "NotInOobe",
+        "characters": 5
+      },
+      {
+        "name": "Manufacturer",
+        "characters": 29
+      },
+      {
+        "name": "DeviceModel",
+        "characters": 17
+      },
+      {
+        "name": "SerialNumber",
+        "characters": 14
+      },
+      {
+        "name": "RequestVersion",
+        "characters": 3,
+        "value": "9.0"
+      },
+      {
+        "name": "AttestationStatus",
+        "characters": 84,
+        "value": "Status=AttestationResultNoAttestation;AttestationErrorMsg=No AIK algorithms provided"
+      },
+      {
+        "name": "AttestationStatusHResult",
+        "characters": 10,
+        "value": "0x80070057"
+      }
+    ]
+  }
+]

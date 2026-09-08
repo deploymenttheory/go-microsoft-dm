@@ -1,0 +1,73 @@
+{
+  "build": "26200.9278",
+  "source": "native Windows HTTP bodies captured by the localhost harness",
+  "fixtures": [
+    {
+      "file": "windows-26200.9278-package1-user.xml",
+      "at": "2026-09-08T12:45:17.0326797Z",
+      "experiment": {
+        "label": "baseline"
+      }
+    },
+    {
+      "file": "windows-26200.9278-package1-digest.xml",
+      "at": "2026-09-08T12:45:17.0661599Z",
+      "experiment": {
+        "label": "baseline"
+      }
+    },
+    {
+      "file": "windows-26200.9278-devdetail-results.xml",
+      "at": "2026-09-08T12:45:17.1054239Z",
+      "experiment": {
+        "label": "baseline"
+      }
+    },
+    {
+      "file": "windows-26200.9278-capability-probes.xml",
+      "at": "2026-09-08T12:53:55.7643599Z",
+      "experiment": {
+        "label": "baseline"
+      }
+    },
+    {
+      "file": "windows-26200.9278-namespace11-response.xml",
+      "at": "2026-09-08T12:54:59.1672061Z",
+      "experiment": {
+        "label": "namespace11",
+        "namespace": "SYNCML:SYNCML1.1"
+      }
+    },
+    {
+      "file": "windows-26200.9278-namespace11-results.xml",
+      "at": "2026-09-08T12:54:59.1859802Z",
+      "experiment": {
+        "label": "namespace11",
+        "namespace": "SYNCML:SYNCML1.1"
+      }
+    },
+    {
+      "file": "windows-26200.9278-large-result-abort-2048.xml",
+      "at": "2026-09-08T12:55:32.8886516Z",
+      "experiment": {
+        "label": "chunked-upload",
+        "max_msg_size": 2048
+      }
+    },
+    {
+      "file": "windows-26200.9278-large-result-abort-8192.xml",
+      "at": "2026-09-08T13:41:06.1499409Z",
+      "experiment": {
+        "label": "chunked-upload-8192",
+        "max_msg_size": 8192
+      }
+    },
+    {
+      "file": "windows-26200.9278-unenroll-1226.xml",
+      "at": "2026-09-08T13:43:32.9231558Z",
+      "experiment": {
+        "label": "unenroll-baseline"
+      }
+    }
+  ]
+}

@@ -127,6 +127,15 @@ func TestReenrollmentRefreshesDigestCredentials(t *testing.T) {
 		t.Fatalf("second enrollment is not active: %v", err)
 	}
 	// A new device object begins again at session 1, as after native unenrollment.
+	// A dropped final exchange can leave an authenticated old session behind.
+	if err := h.app.Service.Management.Config().Sessions.PutSession(ctx, &mdm.Session{
+		Key: mdm.SessionKey(deviceID, "1"), DeviceID: deviceID, SessionID: "1",
+		EnrollmentKey: serial, ClientMsgID: 9, ServerMsgID: 9,
+		Authenticated: true, LastSeen: timeNow(),
+		Sent: map[string]string{}, Children: map[string]string{},
+	}); err != nil {
+		t.Fatal(err)
+	}
 	tr, err := next.RunSession(ctx, "1")
 	if err != nil || !tr.Ended || tr.Challenged != 1 {
 		t.Fatalf("reenrolled device could not authenticate: transcript=%+v, err=%v", tr, err)

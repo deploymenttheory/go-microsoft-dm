@@ -2,11 +2,12 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('Setup', 'Start', 'Stop', 'Trust', 'Enroll', 'Submit', 'Status', 'Query', 'Sync', 'Results', 'Unenroll', 'Cleanup')]
+    [ValidateSet('Setup', 'Start', 'Stop', 'Trust', 'Enroll', 'Submit', 'Status', 'Query', 'Probe', 'Sync', 'Results', 'Unenroll', 'Cleanup')]
     [string]$Action,
     [string]$StateDirectory = (Join-Path $PSScriptRoot '../../tmp/enrollment'),
     [string]$UserName = 'host-validation@example.com',
-    [string]$DeviceID
+    [string]$DeviceID,
+    [switch]$Capture
 )
 
 $ErrorActionPreference = 'Stop'
@@ -109,11 +110,20 @@ switch ($Action) {
         Push-Location (Join-Path $repo 'server')
         try {
             foreach ($name in @('dmserver', 'dmctl')) {
-                & go build -o (Join-Path $stateDir "$name.exe") "./cmd/$name"
+                $source = "./cmd/$name"
+                if ($Capture -and $name -eq 'dmserver') { $source = './e2e/host/_server' }
+                $buildArgs = @('build')
+                if ($Capture -and $name -eq 'dmserver') { $buildArgs += @('-tags', 'host') }
+                & go @buildArgs -o (Join-Path $stateDir "$name.exe") $source
                 if ($LASTEXITCODE -ne 0) { throw "Build failed: $name" }
             }
         } finally { Pop-Location }
         $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
+        if ($Capture) {
+            $env:DM_CAPTURE_DIR = Join-Path $stateDir 'captures'
+            $env:DM_EXPERIMENT_FILE = Join-Path $stateDir 'experiment.json'
+            if (-not (Test-Path $env:DM_EXPERIMENT_FILE)) { '{"label":"baseline"}' | Set-Content $env:DM_EXPERIMENT_FILE }
+        }
         $stderr = Join-Path $stateDir "server-$stamp-stderr.log"
         $stdout = Join-Path $stateDir "server-$stamp-stdout.log"
         $process = Start-Process -FilePath (Join-Path $stateDir 'dmserver.exe') -WindowStyle Hidden -PassThru -RedirectStandardError $stderr -RedirectStandardOutput $stdout
@@ -160,6 +170,20 @@ switch ($Action) {
         Require-Admin
         $id = Get-TestEnrollment
         Start-ScheduledTask -TaskPath "\Microsoft\Windows\EnterpriseMgmt\$id\" -TaskName 'Schedule #1 created by enrollment client'
+    }
+    'Probe' {
+        if (-not $DeviceID) { throw 'Specify -DeviceID from the Results enrollment list.' }
+        Set-ServerEnvironment
+        $commandFile = Join-Path $stateDir 'probes.txt'
+        @(
+            'get ./DevDetail/SwV'
+            'get ./Device/Vendor/MSFT/DeviceManageability/Capabilities/CSPVersions'
+            'get ./Device/Vendor/MSFT/DeclaredConfiguration/Host/BulkTemplate'
+            'get ./User/Vendor/MSFT/DeclaredConfiguration'
+            'get ./Device/Vendor/MSFT/DeclaredConfiguration/ManagementServiceConfiguration/RefreshInterval'
+        ) | Set-Content $commandFile
+        & (Join-Path $stateDir 'dmctl.exe') queue $DeviceID $commandFile
+        if ($LASTEXITCODE -ne 0) { throw 'Queueing conformance probes failed; use the capture harness for unknown CSP paths.' }
     }
     'Results' {
         Set-ServerEnvironment
