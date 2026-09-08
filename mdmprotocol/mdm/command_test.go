@@ -180,3 +180,27 @@ func TestCheckAgainstSchema(t *testing.T) {
 		t.Errorf("unknown node accepted: %v", err)
 	}
 }
+
+func TestUnenrollBuilders(t *testing.T) {
+	t.Parallel()
+	u, err := NewUnenroll("SimServer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := u.Body.(*syncml.Exec); !ok {
+		t.Fatalf("not an Exec: %T", u.Body)
+	}
+	if got := itemsOf(u.Body)[0].Target; got != "./Device/Vendor/MSFT/DMClient/Provider/SimServer/Unenroll" {
+		t.Errorf("provider unenroll URI = %s", got)
+	}
+	if _, err := NewUnenroll(""); !errors.Is(err, ErrCommand) {
+		t.Errorf("empty provider = %v", err)
+	}
+	d, err := NewUnenrollDevice()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := itemsOf(d.Body)[0].Target; got != "./Device/Vendor/MSFT/DMClient/Unenroll" {
+		t.Errorf("device unenroll URI = %s", got)
+	}
+}
