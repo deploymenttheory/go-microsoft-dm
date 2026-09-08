@@ -88,6 +88,7 @@ type Account struct {
 
 // DMClient is the DMClient/Provider/<ID> state.
 type DMClient struct {
+	PushPFN       string
 	ProviderID    string
 	UPN           string
 	EntDeviceName string
@@ -396,6 +397,9 @@ func (e *Enrollment) apply(doc *wapprov.Document, key crypto.Signer) error {
 		return fmt.Errorf("%w: DMClient has no provider %q", ErrProvisioning, e.Account.ProviderID)
 	}
 	e.DMClient = DMClient{ProviderID: e.Account.ProviderID, UPN: prov.Value("UPN"), EntDeviceName: prov.Value("EntDeviceName"), EntDMID: prov.Value("EntDMID")}
+	if push := prov.Child("Push"); push != nil {
+		e.DMClient.PushPFN = push.Value("PFN")
+	}
 	poll := prov.Child("Poll")
 	if poll == nil {
 		return fmt.Errorf("%w: DMClient provider without Poll", ErrProvisioning)

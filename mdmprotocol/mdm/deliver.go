@@ -128,15 +128,10 @@ func (s *Service) prepare(sess *Session, qc *QueuedCommand) (syncml.Command, []s
 	return body, split[1:]
 }
 
-// queueFirstSessionReads enqueues, once, the reads MS-MDM and the enrollment
-// design want on the first session: DevDetail (SwV, LrgObj, MaxSegLen),
-// DeviceManageability CSP versions, and the DMClient push channel URI (Phase
-// 8 consumes it; the known-issues page says re-read it every session).
+// queueFirstSessionReads enqueues device details once, plus fresh DMClient
+// channel and status reads on every authenticated session.
 func (s *Service) queueFirstSessionReads(ctx context.Context, sess *Session) error {
 	uris := []string{devdetail.SwV, devdetail.LrgObj, devdetail.URIMaxSegLen, devicemanageability.CapabilitiesCSPVersions}
-	if s.cfg.ProviderID != "" {
-		uris = append(uris, dmclient.DeviceProviderPushChannelURI(s.cfg.ProviderID))
-	}
 	get, err := NewGet(uris, WithID(internalID(sess, "first-reads")))
 	if err != nil {
 		return err
@@ -144,6 +139,20 @@ func (s *Service) queueFirstSessionReads(ctx context.Context, sess *Session) err
 	get.Internal = true
 	if _, err := s.cfg.Queue.Enqueue(ctx, sess.DeviceID, get, s.cfg.Clock.Now()); err != nil && !isConflict(err) {
 		return err
+	}
+	if s.cfg.ProviderID != "" {
+		// Fresh commands each session: an old acknowledged Get must not suppress
+		// discovery of a renewed channel. Separate reads preserve per-node status.
+		for _, uri := range []string{dmclient.DeviceProviderPushChannelURI(s.cfg.ProviderID), dmclient.DeviceProviderPushStatus(s.cfg.ProviderID)} {
+			read, err := NewGet([]string{uri})
+			if err != nil {
+				return err
+			}
+			read.Internal = true
+			if _, err := s.cfg.Queue.Enqueue(ctx, sess.DeviceID, read, s.cfg.Clock.Now()); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

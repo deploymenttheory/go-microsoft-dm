@@ -603,6 +603,14 @@ in Phase 8; attestation verification in Phase 11; linked WinDC probes in Phase 1
 
 ## Phase 8: WNS push and the poll schedule
 
+Implementation: token sources, raw sender, response handling, optional PFN
+provisioning, per-session channel/status reads, enrollment-bound channel storage,
+`dmctl push`/`push-state`/`checkins`, simulator coverage and desktop test scripts
+are implemented. See [ADR 0018](research/decisions/0018-wns-push-and-poll-policy.md)
+and [Windows WNS validation](testing/windows-wns-push.md). Native push delivery
+and Event 4603 remain unverified until matching WNS credentials are configured;
+the native test skips explicitly when they are absent.
+
 Goal: wake a device on demand without an agent, and make the polling schedule sane.
 
 Inputs: research 1.7 (all six entries), 1.4 DMClient CSP `Push/*` and `Poll/*`, Known issues
@@ -633,13 +641,13 @@ Design:
 - Poll policy: Microsoft's default schedule in the provisioning doc; a "has not checked in"
   server-side alert (the client logs nothing when `dmwappushservice` is missing); push is never
   the only path.
-- Event 4603 (question 4): the guest harness from Phase 7 sends a push and records whether a
+- Event 4603 (question 4): the local Windows harness from Phase 7 sends a push and records whether a
   session arrives; the finding goes in the research store and the WNS decision record.
 
 Decision records: `0018-wns-push-and-poll-policy.md`.
 
 Verification: an httptest WNS with every response code; the token source tests; a simulator that
-"receives" a push by triggering a session; the guest harness sending a real push when WNS
+"receives" a push by triggering a session; the local Windows harness sending a real push when WNS
 credentials are configured (skipped otherwise); failure tests for empty body, non-Microsoft host,
 expired token, dead channel.
 

@@ -382,6 +382,8 @@ type DMClientConfig struct {
 	EntDMID string
 	// Poll is the schedule; zero means DefaultPoll.
 	Poll *Poll
+	// PushPFN enables WNS channel registration for this package identity.
+	PushPFN string
 	// Extra are further parms under Provider/<ID>, for settings this
 	// package does not model.
 	Extra []Parm
@@ -430,6 +432,9 @@ func DMClient(cfg DMClientConfig) (Characteristic, error) {
 		pollCh.Parms = append(pollCh.Parms, Parm{Name: "AllUsersPollOnFirstLogin", Value: "true", DataType: TypeBoolean})
 	}
 	prov.Children = []Characteristic{pollCh}
+	if cfg.PushPFN != "" {
+		prov.Children = append(prov.Children, Characteristic{Type: "Push", Parms: []Parm{{Name: "PFN", Value: cfg.PushPFN, DataType: TypeString}}})
+	}
 	return Characteristic{Type: TypeDMClient, Children: []Characteristic{
 		{Type: "Provider", Children: []Characteristic{prov}},
 	}}, nil

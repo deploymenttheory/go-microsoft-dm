@@ -105,6 +105,15 @@ func (s *conn) tables() []string {
 			channel_uri TEXT NOT NULL,
 			updated_at BIGINT NOT NULL
 		)`,
+		`CREATE TABLE IF NOT EXISTS push_channels (
+			serial VARCHAR(255) PRIMARY KEY,
+			uri TEXT NOT NULL,
+			uri_hash VARCHAR(64) NOT NULL,
+			first_seen BIGINT NOT NULL,
+			observed_at BIGINT NOT NULL,
+			dead BIGINT NOT NULL,
+			push_status TEXT NOT NULL
+		)`,
 		`CREATE TABLE IF NOT EXISTS events (
 			id ` + s.d.autoID + `,
 			device_id VARCHAR(255) NOT NULL,

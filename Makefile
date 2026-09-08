@@ -93,7 +93,13 @@ test-e2e:
 ## test-conformance-host: native capture codec, simulator comparison and opt-in recorder checks (desktop procedure in docs/testing/windows-host-conformance.md)
 test-conformance-host:
 	$(GO) test -count=1 -run 'TestNativeWindowsCaptures|TestPackageOneMatchesNativeWindowsSemantics' ./mdmprotocol/syncml ./simulator
-	cd $(SERVER_DIR) && $(GO) test -count=1 -tags host ./e2e/host/...
+	cd $(SERVER_DIR) && $(GO) test -count=1 -tags host -run 'TestRecorder|TestExperimental' ./e2e/host/...
+
+## test-push: WNS unit, server push lifecycle and simulated wake-to-session checks
+test-push:
+	$(GO) test -count=1 ./msplatformservices/wns/...
+	cd $(SERVER_DIR) && $(GO) test -count=1 ./pushnotify/... ./sqlstore/... ./internal/app/...
+	cd $(SERVER_DIR) && $(GO) test -count=1 -tags e2e -run TestPush ./e2e/...
 
 ## fuzz-smoke: run every fuzz target briefly
 fuzz-smoke:
@@ -136,3 +142,4 @@ clean:
 	rm -rf $(COVER_DIR)
 
 .PHONY: help tools generate verify ddf-diff lint test testdb-up testdb-down test-storage test-conformance test-e2e test-conformance-host fuzz-smoke fuzz coverage vuln refs refs-activity specs ddf ci clean
+.PHONY: test-push

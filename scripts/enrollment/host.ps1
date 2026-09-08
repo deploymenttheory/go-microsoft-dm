@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('Setup', 'Start', 'Stop', 'Trust', 'Enroll', 'Submit', 'Status', 'Query', 'Probe', 'Sync', 'Results', 'Unenroll', 'Cleanup')]
+    [ValidateSet('Setup', 'Start', 'Stop', 'Trust', 'Enroll', 'Submit', 'Status', 'Query', 'Probe', 'Push', 'PushState', 'Sync', 'Results', 'Unenroll', 'Cleanup')]
     [string]$Action,
     [string]$StateDirectory = (Join-Path $PSScriptRoot '../../tmp/enrollment'),
     [string]$UserName = 'host-validation@example.com',
@@ -91,6 +91,18 @@ function Stop-TestServer {
 }
 
 switch ($Action) {
+    'Push' {
+        if (-not $DeviceID) { throw 'Specify -DeviceID.' }
+        Set-ServerEnvironment
+        & (Join-Path $stateDir 'dmctl.exe') push $DeviceID
+        if ($LASTEXITCODE -ne 0) { throw 'WNS push failed.' }
+    }
+    'PushState' {
+        if (-not $DeviceID) { throw 'Specify -DeviceID.' }
+        Set-ServerEnvironment
+        & (Join-Path $stateDir 'dmctl.exe') push-state $DeviceID
+        if ($LASTEXITCODE -ne 0) { throw 'Reading push state failed.' }
+    }
     'Setup' {
         if ($UserName -notmatch '^[^@\s]+@[^@\s.]+(?:\.[^@\s.]+)+$') { throw 'Use a full username such as host-validation@example.com.' }
         if (Test-Path $stateDir) {

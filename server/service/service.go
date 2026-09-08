@@ -60,6 +60,8 @@ type Config struct {
 	// ProviderID is the DMClient provider id the provisioning doc and the
 	// session engine use. Default "go-microsoft-dm".
 	ProviderID string
+	// PushPFN optionally configures WNS during enrollment.
+	PushPFN string
 	// Name is the APPLICATION display name in the provisioning doc.
 	Name string
 	// Clock; default real time.
@@ -138,6 +140,7 @@ func New(cfg Config) (*Service, error) {
 	creds := &credentialSource{store: cfg.Store, clock: cfg.Clock}
 	prov, err := enroll.NewProvisioner(enroll.ProvisionConfig{
 		ManagementURL: managementURL, ProviderID: cfg.ProviderID, Name: cfg.Name,
+		PushPFN:     cfg.PushPFN,
 		Credentials: creds,
 		EntDMID:     func(e *enroll.Enrollment) string { return e.Request.Context.DeviceID },
 	})
