@@ -90,11 +90,10 @@ test-e2e:
 		$(GO) test -race -count=1 -tags e2e -cover -coverpkg=$(ALL_PKGS) $(E2E_PKGS) -args -test.gocoverdir=$(PWD)/$(COVER_DIR)/e2e-$(E2E_STORE); \
 	else echo "no e2e scenarios yet"; fi
 
-## test-conformance-guest: enroll a real Windows guest through guestweave (Phase 7; needs WEAVE_URL and WEAVE_TOKEN, skipped otherwise)
-test-conformance-guest:
-	@if [ -z "$$WEAVE_URL" ] || [ -z "$$WEAVE_TOKEN" ]; then echo "skipped: WEAVE_URL and WEAVE_TOKEN are not set"; \
-	elif ! ls $(SERVER_DIR)/e2e/guest/*_test.go >/dev/null 2>&1; then echo "no guest harness yet"; \
-	else cd $(SERVER_DIR) && $(GO) test -count=1 -tags guest -v ./e2e/guest/...; fi
+## test-conformance-host: native capture codec, simulator comparison and opt-in recorder checks (desktop procedure in docs/testing/windows-host-conformance.md)
+test-conformance-host:
+	$(GO) test -count=1 -run 'TestNativeWindowsCaptures|TestPackageOneMatchesNativeWindowsSemantics' ./mdmprotocol/syncml ./simulator
+	cd $(SERVER_DIR) && $(GO) test -count=1 -tags host ./e2e/host/...
 
 ## fuzz-smoke: run every fuzz target briefly
 fuzz-smoke:
@@ -136,4 +135,4 @@ ci: lint verify test fuzz-smoke coverage
 clean:
 	rm -rf $(COVER_DIR)
 
-.PHONY: help tools generate verify ddf-diff lint test testdb-up testdb-down test-storage test-conformance test-e2e test-conformance-guest fuzz-smoke fuzz coverage vuln refs refs-activity specs ddf ci clean
+.PHONY: help tools generate verify ddf-diff lint test testdb-up testdb-down test-storage test-conformance test-e2e test-conformance-host fuzz-smoke fuzz coverage vuln refs refs-activity specs ddf ci clean

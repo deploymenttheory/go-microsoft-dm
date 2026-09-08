@@ -27,7 +27,7 @@ cross-reference before the files exist; a reserved row names the phase that writ
 | 0014 | [SQL storage backends](0014-sql-storage-backends.md) | 6 |
 | 0015 | [Reference server roles and configuration](0015-reference-server-roles-and-configuration.md) | 6 |
 | 0016 | [`dmctl` structure](0016-dmctl-structure.md) | 6 |
-| 0017 | Conformance testing with guestweave (reserved) | 7 |
+| 0017 | [Conformance testing on a Windows host](0017-conformance-testing-on-windows-host.md) | 7 |
 | 0018 | WNS push and poll policy (reserved) | 8 |
 | 0019 | Certificate renewal and recovery (reserved) | 9 |
 | 0020 | SCEP and certificate delivery (reserved) | 9 |

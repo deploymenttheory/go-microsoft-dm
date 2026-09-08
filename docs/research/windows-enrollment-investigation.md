@@ -157,3 +157,7 @@ claimed fix. Compare APPAUTH ordering and explicit XML encoding separately.
 A passing simulator test is insufficient evidence of native enrollment success.
 Keep optional protocol settings optional and distinguish host compatibility
 findings from library requirements.
+
+## Desktop conformance
+
+The remaining desktop conformance experiments are recorded in [Windows host conformance](../testing/windows-host-conformance.md): enrollment versions 3/5/9, zero-retry polling, namespace acceptance, capability probes, large-result aborts and sanitized fixtures. The session engine now rejects reuse of previous-enrollment session authentication. Other-build, signed-out and successful native-chunk evidence remains unavailable.

@@ -130,3 +130,7 @@ The e2e suite verifies nonce-bearing enrollment, an authenticated read-only Get,
 and unenrollment followed by fresh certificates, secrets and nonces on
 reenrollment. [Observed desktop results](../../docs/research/windows-enrollment-investigation.md)
 record the native compatibility fix and its limits.
+
+## Desktop conformance
+
+Use `Start -Capture` for the opt-in native recorder and `Probe -DeviceID <id>` for the fixed read-only capability queries. Experiment configuration, capture export and evidence limits are documented in [Windows host conformance](../../docs/testing/windows-host-conformance.md). Raw captures remain private in the ignored state directory. `make test-conformance-host` runs offline fixture and recorder checks; it does not modify the desktop.

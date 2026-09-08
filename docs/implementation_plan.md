@@ -567,66 +567,39 @@ Decision records: `0014-sql-storage-backends.md`, `0015-reference-server-roles-a
 Verification: `make test-storage`, `make test-e2e`, coverage gate active for the server module;
 a Dockerfile builds `dmserver`.
 
-## Phase 7: Real-client conformance on guestweave
+## Phase 7: Real-client conformance on the Windows desktop
 
-Execution update (2026-09-08): the user superseded the VM approach with Windows
-desktop validation. Repeated native enrollments and an authenticated read-only
-management query passed on build 26200.9278 after correcting reference-server
-bootstrap provisioning. The simulation server and regression tests include the
-fix. Reusable desktop scripts are in [scripts/enrollment](../scripts/enrollment/README.md).
-See [results](research/windows-enrollment-investigation.md). This validates
-the desktop enrollment path, not the original multi-version conformance matrix
-or all deliverables listed below.
+The user superseded the guest environment with the local Windows host. Desktop
+conformance work is complete on build 26200.9278, with the evidence limits below.
+See [procedure and results](testing/windows-host-conformance.md) and
+[ADR 0017](research/decisions/0017-conformance-testing-on-windows-host.md).
 
-Goal: enroll and manage a real Windows 11 guest (26100.x on the current LCU, and a 26300.x
-Release Preview guest), capture what the real client sends, turn captures into fixtures, and close
-the open questions that only a real client can answer.
+Delivered:
 
-Inputs: research section 5 (SyncMLViewer, `mdmlocalmanagement.dll`, Fleet's test client, MDM
-diagnostics, the guestweave entry in full), section 0 (media for 26H2 via the ReleasePreview
-ring), section 10 open questions 1, 2, 4, 5, 6 and 9, section 9 "Test environments are solved
-in-house".
+- Reusable setup, capture, enrollment, read-only probes, sync, unenrollment and
+  cleanup in `scripts/enrollment`; opt-in `server/e2e/host` recorder and tests.
+- Reviewed native fixtures for user package 1, digest challenge response,
+  DevDetail/CSPVersions, capability probes, namespace acceptance, large-result
+  aborts and user-request unenrollment 1226. Codec and simulator comparisons pass.
+- Q1: advertised 3.0/5.0/9.0 enrollment comparison and sanitized ordered context
+  summaries; raw attestation retained privately for Phase 11.
+- Q2: zero first retries produces a one-minute schedule with no duration;
+  successive automatic polls observed. Production polling defaults unchanged.
+- Q5: namespace-only 1.1 and 1.2 responses accepted for read-only management.
+- Q6: three primary-enrollment WinDC probes return 406 on this build.
+- Q9: CSPVersions captured on the available build.
+- Reenrollment session isolation fixed, with unit and server e2e regressions
+  covering unfinished authenticated state from the prior enrollment.
 
-Deliverables:
+Verification: `make test-conformance-host` for offline checks; native scripts
+for Windows registration, authenticated Get status 200 and unenrollment. The
+desktop exit criterion substitutes a harmless Get for the original reboot Exec.
 
-- `docs/testing/guest-conformance.md`: how to create the guest on either host (`weave create win
-  --from-windows pro-25h2` on Windows; `weave create --from-windows 11 <name>` on macOS; the
-  ReleasePreview ring through go-sdk-winmediafoundry for 26300.x), snapshot the clean state, install
-  SyncMLViewer, point discovery at `dmserver` (deep link `ms-device-enrollment:?mode=mdm&servername=...`
-  or the Settings "Enroll only in device management" path with a hosts-file entry for
-  `enterpriseenrollment.<domain>`), enroll with OnPremise credentials, capture, revert.
-- `server/e2e/guest` (build tag `guest`): a harness that drives `weave serve`'s HTTP API to revert
-  the snapshot, start the guest, run the in-guest agent to trigger `deviceenroller.exe /o {GUID}
-  /c` or the scheduled task, and collect `mdmdiagnosticstool.exe` output and SyncMLViewer exports
-  from the guest. `make test-conformance-guest` runs it when `WEAVE_URL` and `WEAVE_TOKEN` are
-  set; otherwise it is skipped.
-- Fixtures: sanitised SyncMLViewer captures of package 1 (both `LoginStatus` states), a chunked
-  upload, a `DevDetail` result, the 1226 unenroll alert, checked into `mdmprotocol/syncml/testdata/captures/`
-  with the build number in the file name.
-- Findings recorded in the research store and the relevant decision records:
-  - Question 1: capture against a server advertising `EnrollmentVersion` 3.0, 5.0 and 9.0; record
-    which `AdditionalContext` items appear.
-  - Question 2: set `Poll/NumberOfFirstRetries=0` and observe whether the client polls forever.
-  - Question 5: send `SYNCML:SYNCML1.1` and `1.2` and record acceptance (WinDC half in Phase 12).
-  - Question 6: `Get` on `ManagementServiceConfiguration/RefreshInterval`, `Host/BulkTemplate`, and
-    a `./User/Vendor/MSFT/DeclaredConfiguration` node on a 26100 guest (needs Phase 12's linked
-    enrollment for a full answer; the bare `Get` after primary enrollment already tells whether
-    the nodes exist).
-  - Question 9: dump `DeviceManageability/Capabilities/CSPVersions` on 26100 and 26300 guests and
-    diff; run `ddfgen diff` if a new bundle appears.
-  - Question 4 is advanced when Phase 8 exists; keep the guest harness ready to log Event 4603.
-- The attestation items (question 1) are produced by the vTPM guest and are stored raw for
-  Phase 11.
-
-Decision record: `0017-conformance-testing-with-guestweave.md` (what the guest proves, what only
-physical hardware proves: vendor EK chains, Autopilot and OOBE flows that need retail media).
-
-Verification: the harness passes on at least one host; captures diff cleanly against the
-simulator's output for the same scenario, and every difference is either fixed in Phases 2 to 5 or
-recorded as a known client behaviour in a decision record.
-
-Exit criteria: a real 26100.x guest enrolls, completes a session with a `Reboot/RebootNow` `Exec`
-acknowledged, and unenrolls, driven from `make test-conformance-guest`.
+Explicitly unverified: native LoginStatus `none` (would require signing out),
+successful native chunking (client reports LrgObj false and aborts both tested
+message limits), and the original 26100/26300 build comparison (only 26200.9278
+available). These are evidence gaps, not passing tests. Q4/Event 4603 continues
+in Phase 8; attestation verification in Phase 11; linked WinDC probes in Phase 12.
 
 ## Phase 8: WNS push and the poll schedule
 

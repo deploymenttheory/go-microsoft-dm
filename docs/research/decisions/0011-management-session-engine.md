@@ -115,3 +115,7 @@ Reference source identifiers and paths (relative to the named project):
 - `deploymenttheory/local-mdm`, `internal/platform/windows/management.go` (`HandleSyncML` package 1 to 2)
 - `sonicaj/MDMatador`, `internal/mdm/command_manager.go` (`processIncomingProtocolCommands`, `processPendingOperations`, `GetResponseSyncMLCommand`)
 - `mattrax/Mattrax` (`rust` branch), `crates/ms-mdm`
+
+## Desktop conformance
+
+Session lookup is additionally bound to EnrollmentKey. A new enrollment may restart SessionID and MsgID at 1; it cannot continue an unfinished session or inherit authentication from the previous enrollment. Unit and server e2e regressions seed old authenticated state and require a fresh challenge.

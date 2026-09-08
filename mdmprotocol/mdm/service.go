@@ -150,6 +150,11 @@ func (s *Service) session(ctx context.Context, req *syncml.Message, id *Identity
 	key := SessionKey(req.Header.Source.LocURI, req.Header.SessionID)
 	clientMsg, _ := strconv.Atoi(req.Header.MsgID)
 	sess, err := s.cfg.Sessions.GetSession(ctx, key)
+	// Windows restarts session numbering after reenrollment. A session from
+	// the old certificate must not carry authentication or MsgID state forward.
+	if err == nil && sess.EnrollmentKey != id.EnrollmentKey {
+		err = ErrNotFound
+	}
 	if errors.Is(err, ErrNotFound) {
 		if clientMsg != 1 {
 			return nil, fmt.Errorf("%w: new session %q opened with MsgID %s, not 1", syncml.ErrInvalid, key, req.Header.MsgID)

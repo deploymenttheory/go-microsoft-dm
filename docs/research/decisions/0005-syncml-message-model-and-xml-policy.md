@@ -117,3 +117,7 @@ Reference source identifiers and paths (relative to the named project):
 - `mattrax/Mattrax` (`rust` branch), `crates/ms-mdm/src/sync_body.rs` (ordered enum of children), `alert.rs` (Item optional against the spec), `status.rs`, `results.rs` (Cmd inside Results), `session_id.rs` (4-byte bound), `data.rs` (`msft:originalerror`)
 - `oscartbeaumont/windows_mdm`, `mdm_manage.go` (regex extraction of SessionID and MsgID; the failure this package's ordered model avoids)
 - `Malcolm/local-mdm`, `internal/platform/windows/syncml.go` (typed builder without a parser)
+
+## Desktop conformance
+
+Native build 26200.9278 accepts server namespace 1.1 with protocol version 1.2 and continues sending namespace 1.2. CmdIDs start at 2 and DevInfo DmV is 1.3. See [native evidence](../../testing/windows-host-conformance.md); namespace acceptance does not establish WinDC compatibility.
