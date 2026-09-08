@@ -20,12 +20,13 @@ version 26H2 on the shared 24H2 servicing branch (build 26100.x and later).
 
 ## Status
 
-Pre-alpha. Phases 0 to 4 of the [implementation plan](docs/implementation_plan.md) are done:
+Pre-alpha. Phases 0 to 5 of the [implementation plan](docs/implementation_plan.md) are done:
 the workspace, the pinned references, the foundation packages, the SyncML codec, the CSP
-schema generated from Microsoft's DDF v2 bundle, and MS-MDE2 enrollment with the on-premises
-authentication policy (discovery, XCEP policy, WSTEP issuance from a pluggable CA, the
-provisioning document, storage contracts and an in-memory backend, and a simulator that
-enrolls against them). No management session runs yet. The API is pre-1.0 and will change.
+schema generated from Microsoft's DDF v2 bundle, MS-MDE2 enrollment with the on-premises
+authentication policy, and the MS-MDM management session engine (OMA DM packages 1 to 4,
+certificate and MD5 authentication, a monotonic command queue with per-command results,
+device- and user-scope gating, large-object chunking, unenrollment, and a software client that
+runs whole sessions against the engine). The API is pre-1.0 and will change.
 
 ## Layout
 

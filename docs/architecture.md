@@ -21,11 +21,11 @@ populated tiers, directory-level cycles and the module boundary, in production a
 |---|---|---|---|
 | Foundation | `clock`, `paging`, `secrets`, `telemetry`, `state`, `ratelimit`, `testpki` | Injected time, cursor paging, redacting secrets, the OpenTelemetry seam, transactional expiring state, GCRA quotas, test PKI | Implemented (decision record 0004) |
 | Schema | `schema/csp`, `schema/csp/<name>`, `schema/policy/<area>`, `schema/registry`, `schema/support`, `schema/validation`, `internal/schemagen`, `cmd/ddfgen` | Runtime model, generated node tables and URI constants for 57 CSPs and 261 Policy areas, the registry over all 400 trees, build applicability and command validation | Implemented (decision records 0006 and 0007) |
-| Protocol | `mdmprotocol/{syncml,soap,wapprov,enroll,mdm,windc,event,dmhook}` | SyncML codec, SOAP envelope and faults, provisioning document, enrollment flow, session engine, WinDC, events, hooks | `syncml` (decision record 0005), `soap`, `wapprov` and `enroll` (decision record 0008) implemented; `mdm`, `windc`, `event`, `dmhook` are placeholders (Phases 5, 12) |
+| Protocol | `mdmprotocol/{syncml,soap,wapprov,enroll,mdm,windc,event,dmhook}` | SyncML codec, SOAP envelope and faults, provisioning document, enrollment flow, session engine, WinDC, events, hooks | `syncml` (0005), `soap`, `wapprov`, `enroll` (0008) and `mdm` (0011 to 0013) implemented; `windc`, `event`, `dmhook` are placeholders (Phase 12) |
 | PKI | `pki/{ca,wstep,xcep,scep,attestation,revocation}` | CA interface, CSR parsing and issuance, XCEP policy, SCEP, attestation, revocation | `ca`, `wstep`, `xcep` implemented (decision record 0009); `scep`, `attestation`, `revocation` are placeholders (Phases 9, 11) |
 | Platform services | `msplatformservices/{wns,entra,graph}` | WNS push, Entra token validation, Graph | Placeholders (Phases 8, 10) |
-| Storage | `storage`, `storage/inmem`, `storage/storagetest` | Enrollment and certificate contracts, the enrollment recorder, in-memory backend, contract suite | Implemented (decision record 0010); session-engine contracts arrive in Phase 5 |
-| Client | `simulator` | A Windows MDM client in software | Enrollment implemented (decision record 0008); the session client arrives in Phase 5 |
+| Storage | `storage`, `storage/inmem`, `storage/storagetest` | Enrollment, certificate and OMA DM command-queue contracts, the enrollment recorder, the session authenticator, in-memory backends, contract suites | Implemented (decision records 0010, 0012) |
+| Client | `simulator` | A Windows MDM client in software | Enrollment (0008) and management sessions (0011) implemented |
 | Server | `server/{sqlstore,service,httpapi,pushnotify,windcsync,adminauth,audit,eventsink}` | Persistence, orchestration, transport, administration | Placeholders (Phases 6, 8, 12, 15) |
 | App | `server/cmd/{dmserver,dmctl}`, `server/internal/app`, `server/e2e` | Composition, CLI, scenarios | Stubs (Phase 6) |
 
@@ -98,6 +98,18 @@ the GET probe, sets `Content-Length` on every response and never chunks.
 intermediate, the client certificate under `My/User` or `My/System`, `My/WSTEP/Renew`), the
 w7 `APPLICATION` with both `APPAUTH` credentials, `DMClient` with Microsoft's default poll
 schedule, and `RootCATrustedCertificates`.
+
+`mdmprotocol/mdm` is the management session engine: `Service.Handle` decodes and validates a
+SyncML request, opens or continues a session keyed by DeviceID and SessionID, authenticates the
+device by its TLS client certificate or its `syncml:auth-md5` (or basic) credential with a
+per-session nonce challenge, records the package-1 device facts and routes client and generic
+alerts to hooks, files each Status and Results against the queued command it answers, and fills
+the reply from a `CommandQueue`: commands in sequence order, user-scoped commands held until a
+user signs in, large items chunked to the client's limit, the message bounded and `Final` set
+unless an object is still going out. The command builders refuse the batches the Windows client
+refuses (a nested Atomic, a Get inside an Atomic, an Add then Replace on one node, mixed scope).
+`Handler` is the non-chunking HTTP adapter. Authentication, the queue and session state are
+interfaces the storage tier implements; results are stored per command, never as raw envelopes.
 
 `pki/ca` is the issuer: a policy-driven signer that never back-dates, built from memory, PEM
 or files, or generated. `pki/wstep` parses the client's PKCS#10 with a narrow relaxation for
