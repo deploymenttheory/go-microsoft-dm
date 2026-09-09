@@ -101,13 +101,18 @@ schedule, and `RootCATrustedCertificates`.
 
 `mdmprotocol/mdm` is the management session engine: `Service.Handle` decodes and validates a
 SyncML request, opens or continues a session keyed by DeviceID and SessionID, authenticates the
-device by its TLS client certificate or its `syncml:auth-md5` (or basic) credential with a
+device by a verified TLS leaf matched to the enrollment serial and thumbprint, or its
+`syncml:auth-md5` (or basic) credential with a
 per-session nonce challenge, records the package-1 device facts and routes client and generic
 alerts to hooks, files each Status and Results against the queued command it answers, and fills
 the reply from a `CommandQueue`: commands in sequence order, user-scoped commands held until a
 user signs in, large items chunked to the client's limit, the message bounded and `Final` set
 unless an object is still going out. The command builders refuse the batches the Windows client
 refuses (a nested Atomic, a Get inside an Atomic, an Add then Replace on one node, mixed scope).
+Certificate trust is rechecked on every request using TLS `VerifiedChains`; the listener must
+verify with enrollment CA roots. Custom trust rejection is final. Basic credentials are stored
+as salted PBKDF2 verifiers and compared in constant time; SQL startup converts legacy plaintext
+rows transactionally (upgrade requirements in decision record 0014).
 `Handler` is the non-chunking HTTP adapter. Authentication, the queue and session state are
 interfaces the storage tier implements; results are stored per command, never as raw envelopes.
 `AcknowledgedValues` and `Diff` let a caller enqueue only the settings that changed since the

@@ -1,6 +1,7 @@
 package storagetest
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -32,12 +33,16 @@ func RunCredentialSuite(t *testing.T, newStore CredentialFactory) {
 	if err != nil || got.AuthType != mdm.AuthDigest || string(got.CredentialHash) != "\x01\x02\x03" {
 		t.Errorf("get = %+v, %v", got, err)
 	}
-	// Replace.
-	if err := s.PutMDMCredential(ctx, storage.MDMCredential{DeviceID: "d", AuthType: mdm.AuthBasic, BasicUsername: "u", BasicPassword: "p"}); err != nil {
+	// Replace with a salted verifier; no plaintext is accepted or returned.
+	hash, err := mdm.HashBasicCredential("u", "p")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.PutMDMCredential(ctx, storage.MDMCredential{DeviceID: "d", AuthType: mdm.AuthBasic, CredentialHash: hash}); err != nil {
 		t.Fatal(err)
 	}
 	got, err = s.MDMCredential(ctx, "d")
-	if err != nil || got.AuthType != mdm.AuthBasic || got.BasicUsername != "u" || got.BasicPassword != "p" {
+	if err != nil || got.AuthType != mdm.AuthBasic || !bytes.Equal(got.CredentialHash, hash) || !mdm.VerifyBasicCredential(got.CredentialHash, "u", "p") {
 		t.Errorf("replaced = %+v, %v", got, err)
 	}
 	// A returned credential is independent of the store.

@@ -32,6 +32,21 @@ cutoff, so retention is a first-class operation. Because `storage.Store` and `md
 both define `Get` and `List` with different signatures, the queue is a separate `Queue` type over
 the same connection, reached through `Store.Queue()`.
 
+Basic credentials use the salted verifier from `mdm.HashBasicCredential` in `credential_hash`.
+On `Open`, a transaction converts legacy Basic rows with a nonempty username or password,
+then clears `basic_username` and `basic_password`. The old columns remain for schema
+compatibility and current writes leave both empty. Reads return only the verifier. Migration
+is idempotent, preserves MD5 credentials, and fails startup with rollback if conversion fails.
+The all-empty legacy credential is not activated automatically.
+
+Stop all old server instances before upgrading and allow one new instance to finish migration
+before starting others. Do not roll back to code that expects plaintext Basic fields; restore
+from a protected pre-upgrade backup or reprovision credentials if rollback is necessary.
+Clearing live rows does not erase old database pages, WAL, snapshots or backups; handle those
+under the deployment's existing secret-retention policy. Migration cost grows with the number
+of Basic accounts because each verifier requires a password derivation. The reference server
+provisions MD5, so its normal credential rows need no conversion.
+
 OMA DM session state is not persisted. A session is a short-lived, single-node construct holding
 engine-internal state (the send map, the reassembler, the once-only package-1 flag), so the
 reference server keeps it in `mdm.MemorySessions`. Durable device facts are captured by the

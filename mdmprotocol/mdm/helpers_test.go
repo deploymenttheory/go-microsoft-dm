@@ -119,7 +119,11 @@ func TestVerifyCredential(t *testing.T) {
 	if verifyCredential(md5ID, syncml.NewBasicCred("u", "p"), nonce) {
 		t.Error("wrong cred type accepted")
 	}
-	basicID := &Identity{AuthType: AuthBasic, BasicUsername: "u", BasicPassword: "p"}
+	basicHash, err := HashBasicCredential("u", "p")
+	if err != nil {
+		t.Fatal(err)
+	}
+	basicID := &Identity{AuthType: AuthBasic, CredentialHash: basicHash}
 	if !verifyCredential(basicID, syncml.NewBasicCred("u", "p"), nil) {
 		t.Error("valid basic rejected")
 	}

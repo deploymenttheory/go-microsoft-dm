@@ -191,18 +191,23 @@ func (s *Service) session(ctx context.Context, req *syncml.Message, id *Identity
 	return sess, nil
 }
 
-// authenticate decides whether the message may be acted on: a trusted
-// certificate authenticates the whole session; otherwise the SyncHdr Cred is
-// verified against the issued nonce.
+// authenticate decides whether the message may be acted on. Certificate trust
+// is rechecked for each request; application-layer authentication is remembered
+// for the session after the SyncHdr Cred has been verified.
 func (s *Service) authenticate(ctx context.Context, req *syncml.Message, id *Identity, sess *Session, t *Transport) authOutcome {
-	if sess.Authenticated {
+	if sess.Authenticated && sess.AuthType != string(AuthCertificate) {
 		return authTrusted
 	}
-	if t != nil && (id.AuthType == AuthCertificate || len(t.Certificates) > 0) {
-		if s.cfg.Auth.TrustCertificate(ctx, id, t.Certificates) || certTrusts(id, t.Certificates) {
+	if chains := t.verifiedPeerChains(); len(chains) > 0 {
+		if s.cfg.Auth.TrustCertificate(ctx, id, chains) {
 			sess.Authenticated, sess.AuthType = true, string(AuthCertificate)
 			return authTrusted
 		}
+	}
+	// Certificate authentication must hold on every request, including when
+	// a session continues over a new TLS connection.
+	if sess.AuthType == string(AuthCertificate) {
+		sess.Authenticated, sess.AuthType = false, ""
 	}
 	if id.AuthType == AuthBasic && !s.cfg.AllowBasic {
 		return authChallenge

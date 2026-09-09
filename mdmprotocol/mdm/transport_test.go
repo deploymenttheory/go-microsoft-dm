@@ -2,8 +2,6 @@ package mdm
 
 import (
 	"context"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -110,21 +108,5 @@ func TestMemorySessions(t *testing.T) {
 	}
 	if err := m.DeleteSession(ctx, "gone"); err != nil {
 		t.Errorf("delete unknown: %v", err)
-	}
-}
-
-func TestCertTrusts(t *testing.T) {
-	t.Parallel()
-	id := &Identity{DeviceID: "DEVICE-01"}
-	match := &x509.Certificate{Subject: pkix.Name{CommonName: "DEVICE-01"}}
-	other := &x509.Certificate{Subject: pkix.Name{CommonName: "OTHER"}}
-	if !certTrusts(id, []*x509.Certificate{other, match}) {
-		t.Error("matching cert not trusted")
-	}
-	if certTrusts(id, []*x509.Certificate{other}) {
-		t.Error("non-matching cert trusted")
-	}
-	if certTrusts(&Identity{}, []*x509.Certificate{match}) {
-		t.Error("empty device id trusted")
 	}
 }

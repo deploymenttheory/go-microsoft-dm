@@ -24,7 +24,7 @@ func (s *conn) migrate(ctx context.Context) error {
 			return fmt.Errorf("sqlstore: migrate: %w", err)
 		}
 	}
-	return nil
+	return s.migrateBasicCredentials(ctx)
 }
 
 // isDuplicateIndex reports a MySQL "duplicate key name" (1061), raised when a

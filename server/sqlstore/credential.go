@@ -23,7 +23,7 @@ func (s *Store) PutMDMCredential(ctx context.Context, c storage.MDMCredential) e
 	_, err := s.exec(ctx,
 		`INSERT INTO mdm_credentials (device_id, auth_type, credential_hash, basic_username, basic_password) VALUES (?, ?, ?, ?, ?)`+
 			s.d.upsert([]string{"device_id"}, cols),
-		c.DeviceID, string(c.AuthType), hash, c.BasicUsername, c.BasicPassword)
+		c.DeviceID, string(c.AuthType), hash, "", "")
 	return err
 }
 
@@ -34,8 +34,8 @@ func (s *Store) MDMCredential(ctx context.Context, deviceID string) (storage.MDM
 		authType string
 	)
 	c.DeviceID = deviceID
-	err := s.queryRow(ctx, `SELECT auth_type, credential_hash, basic_username, basic_password FROM mdm_credentials WHERE device_id = ?`, deviceID).
-		Scan(&authType, &c.CredentialHash, &c.BasicUsername, &c.BasicPassword)
+	err := s.queryRow(ctx, `SELECT auth_type, credential_hash FROM mdm_credentials WHERE device_id = ?`, deviceID).
+		Scan(&authType, &c.CredentialHash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return storage.MDMCredential{}, fmt.Errorf("%w: credential for %q", storage.ErrNotFound, deviceID)
 	}

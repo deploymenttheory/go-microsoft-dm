@@ -22,8 +22,9 @@ var (
 // AuthType names the application-layer credential the account uses.
 type AuthType string
 
-// The credential types. Certificate means the device is trusted by its TLS
-// client certificate and no application-layer credential is checked.
+// The credential types. Certificate means the device is trusted by its
+// verified TLS client certificate on each request and needs no application-layer
+// credential.
 const (
 	AuthCertificate AuthType = "certificate"
 	AuthDigest      AuthType = "md5"
@@ -36,16 +37,15 @@ type Identity struct {
 	DeviceID string
 	// EnrollmentKey is the certificate serial that keys the enrollment.
 	EnrollmentKey string
+	// CertificateThumbprint is the enrollment certificate's SHA-1 thumbprint,
+	// uppercase hex, used with the serial to bind a verified TLS leaf.
+	CertificateThumbprint string
 	// AuthType is how the client authenticates at the application layer when
 	// the TLS certificate is not matched.
 	AuthType AuthType
-	// CredentialHash is H(username:password) for AuthDigest, or the
-	// password bytes' basis for AuthBasic; the engine never needs the
-	// plaintext.
+	// CredentialHash is H(username:password) for AuthDigest, or the salted
+	// verifier returned by HashBasicCredential for AuthBasic.
 	CredentialHash []byte
-	// Basic holds the username and password for AuthBasic accounts.
-	BasicUsername string
-	BasicPassword string
 }
 
 // Authenticator resolves a device to its identity and supplies what the
@@ -55,23 +55,11 @@ type Authenticator interface {
 	// Lookup returns the identity for an OMA DM source (DeviceID), or
 	// ErrUnenrolled.
 	Lookup(ctx context.Context, deviceID string) (*Identity, error)
-	// TrustCertificate reports whether one of the TLS peer certificates
-	// belongs to the enrollment, which authenticates the whole session
-	// (MS-MDM 1.3.1, transport client-certificate authentication).
-	TrustCertificate(ctx context.Context, id *Identity, certs []*x509.Certificate) bool
-}
-
-// certTrusts is the default certificate check: a certificate whose subject
-// common name contains the DeviceID, which is how the enrollment CSR named
-// it, is trusted. A deployment that pins the exact certificate implements
-// TrustCertificate itself.
-func certTrusts(id *Identity, certs []*x509.Certificate) bool {
-	for _, c := range certs {
-		if id.DeviceID != "" && strings.Contains(c.Subject.CommonName, id.DeviceID) {
-			return true
-		}
-	}
-	return false
+	// TrustCertificate binds a verified TLS leaf to the enrollment. The
+	// engine supplies only chains from Transport.VerifiedChains whose leaf
+	// is the current peer. The TLS listener must verify against enrollment
+	// CA roots. A false result is final; the engine has no fallback match.
+	TrustCertificate(ctx context.Context, id *Identity, verifiedChains [][]*x509.Certificate) bool
 }
 
 // authOutcome is the result of the engine's per-message authentication.
@@ -107,7 +95,7 @@ func verifyCredential(id *Identity, cred *syncml.Cred, nonce []byte) bool {
 		if err != nil {
 			return false
 		}
-		return u == id.BasicUsername && p == id.BasicPassword
+		return VerifyBasicCredential(id.CredentialHash, u, p)
 	}
 	return false
 }
