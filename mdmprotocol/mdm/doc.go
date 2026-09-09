@@ -7,10 +7,11 @@
 // mdmprotocol/syncml, finds or opens the Session (keyed by DeviceID and
 // SessionID; a new session must be package 1, a continuing one must carry the
 // next MsgID), identifies the device through an Authenticator (a client
-// certificate that belongs to the enrollment is trusted; otherwise the
+// certificate must be TLS-verified and bound to the enrollment on each
+// request; otherwise the
 // SyncHdr Cred is verified as syncml:auth-md5 against the stored credential
 // hash and the nonce issued for the device, or as syncml:auth-basic when the
-// account was provisioned that way; a missing or wrong Cred is answered with
+// account was provisioned that way, using a salted Basic verifier; a missing or wrong Cred is answered with
 // 407 or 401 and a Chal carrying a fresh nonce; success is answered once with
 // 212 and a Chal holding the nonce for the next session), records the
 // package 1 facts (DevInfo, LoginStatus, SyncType, DevicePrepSync), routes

@@ -2,8 +2,6 @@ package storage_test
 
 import (
 	"context"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"errors"
 	"testing"
 	"time"
@@ -43,19 +41,6 @@ func TestMDMAuthenticator(t *testing.T) {
 	// Unknown device.
 	if _, err := auth.Lookup(ctx, "NOPE"); !errors.Is(err, mdm.ErrUnenrolled) {
 		t.Errorf("unknown = %v", err)
-	}
-	// Certificate trust: default CN match.
-	match := &x509.Certificate{Subject: pkix.Name{CommonName: "DEVICE-A-cert"}}
-	if !auth.TrustCertificate(ctx, id, []*x509.Certificate{match}) {
-		t.Error("matching cert not trusted")
-	}
-	if auth.TrustCertificate(ctx, id, []*x509.Certificate{{Subject: pkix.Name{CommonName: "OTHER"}}}) {
-		t.Error("non-matching cert trusted")
-	}
-	// A custom trust func overrides.
-	auth.TrustCert = func(*mdm.Identity, []*x509.Certificate) bool { return true }
-	if !auth.TrustCertificate(ctx, id, nil) {
-		t.Error("custom trust func ignored")
 	}
 	// Credential store not found is not fatal.
 	auth2 := &storage.MDMAuthenticator{Enrollments: store, Credentials: store}

@@ -43,9 +43,9 @@ const (
 	HeaderUserAgentOrigin = "UserAgentOrigin"
 )
 
-// Transport is what the HTTP layer knew about a request, parsed but never
-// enforced beyond the content type: the Learn enrollment page says a server
-// must not check User-Agent, hostnames or value formats.
+// Transport contains HTTP metadata and TLS verification evidence for a
+// request. Certificate authentication uses the TLS evidence. HTTP metadata
+// is parsed without enforcing User-Agent, hostnames or value formats.
 type Transport struct {
 	Mode     Mode
 	Platform string
@@ -69,8 +69,14 @@ type Transport struct {
 	UserAgentOrigin string
 	// ContentType is the media type without parameters.
 	ContentType string
-	// Certificates are the TLS peer certificates, leaf first.
+	// Certificates are the TLS peer certificates, leaf first. Presentation
+	// alone does not establish trust.
 	Certificates []*x509.Certificate
+	// VerifiedChains comes from tls.ConnectionState.VerifiedChains. The
+	// listener must use VerifyClientCertIfGiven or RequireAndVerifyClientCert
+	// with ClientCAs containing only enrollment CA roots. Callers of Handle
+	// must never populate this field from unverified peers or HTTP headers.
+	VerifiedChains [][]*x509.Certificate
 }
 
 // ParseTransport reads the transport facts from an HTTP request. It returns
@@ -96,6 +102,7 @@ func ParseTransport(r *http.Request) (*Transport, error) {
 	t.UserAgentOrigin = r.Header.Get(HeaderUserAgentOrigin)
 	if r.TLS != nil {
 		t.Certificates = r.TLS.PeerCertificates
+		t.VerifiedChains = r.TLS.VerifiedChains
 	}
 	ct := r.Header.Get("Content-Type")
 	if ct == "" {
@@ -115,6 +122,22 @@ func ParseTransport(r *http.Request) (*Transport, error) {
 		return t, fmt.Errorf("%w: %q", ErrContentType, mt)
 	}
 	return t, nil
+}
+
+// verifiedPeerChains excludes malformed chains and chains for a different
+// leaf. Only the certificate whose private key authenticated this connection
+// can establish the device identity; intermediates are never candidates.
+func (t *Transport) verifiedPeerChains() [][]*x509.Certificate {
+	if t == nil || len(t.Certificates) == 0 || t.Certificates[0] == nil || len(t.Certificates[0].Raw) == 0 {
+		return nil
+	}
+	var chains [][]*x509.Certificate
+	for _, chain := range t.VerifiedChains {
+		if len(chain) > 0 && chain[0] != nil && t.Certificates[0].Equal(chain[0]) {
+			chains = append(chains, chain)
+		}
+	}
+	return chains
 }
 
 func (t *Transport) parseQuery(q url.Values) error {

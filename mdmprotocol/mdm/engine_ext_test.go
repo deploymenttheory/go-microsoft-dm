@@ -37,7 +37,7 @@ func (d *driver) send(m *syncml.Message) *syncml.Message {
 	if err != nil {
 		d.t.Fatal(err)
 	}
-	out, err := d.svc.Handle(context.Background(), &mdm.Transport{}, body)
+	out, err := d.svc.Handle(context.Background(), verifiedTransport(), body)
 	if err != nil {
 		d.t.Fatalf("Handle: %v", err)
 	}
@@ -237,7 +237,9 @@ func (a hashAuth) Lookup(_ context.Context, deviceID string) (*mdm.Identity, err
 	}
 	return &mdm.Identity{DeviceID: dev, EnrollmentKey: "1", AuthType: mdm.AuthDigest, CredentialHash: a.hash}, nil
 }
-func (a hashAuth) TrustCertificate(context.Context, *mdm.Identity, []*x509.Certificate) bool { return false }
+func (a hashAuth) TrustCertificate(context.Context, *mdm.Identity, [][]*x509.Certificate) bool {
+	return false
+}
 
 func TestEngineAtomicChildren(t *testing.T) {
 	t.Parallel()
@@ -309,9 +311,18 @@ func (h *recHooks) PackageOne(_ context.Context, _, _ string, f mdm.Facts) error
 	h.facts = append(h.facts, f)
 	return nil
 }
-func (h *recHooks) GenericAlert(_ context.Context, e mdm.Event) error { h.generic = append(h.generic, e); return nil }
-func (h *recHooks) ClientEvent(_ context.Context, e mdm.Event) error  { h.events = append(h.events, e); return nil }
-func (h *recHooks) Unenrolled(_ context.Context, d string) error      { h.unenrolled = append(h.unenrolled, d); return nil }
+func (h *recHooks) GenericAlert(_ context.Context, e mdm.Event) error {
+	h.generic = append(h.generic, e)
+	return nil
+}
+func (h *recHooks) ClientEvent(_ context.Context, e mdm.Event) error {
+	h.events = append(h.events, e)
+	return nil
+}
+func (h *recHooks) Unenrolled(_ context.Context, d string) error {
+	h.unenrolled = append(h.unenrolled, d)
+	return nil
+}
 
 func TestEngineAlerts(t *testing.T) {
 	t.Parallel()
@@ -370,7 +381,7 @@ func TestEngineBasicAuth(t *testing.T) {
 	d.clientMsg = 2
 	m2.Header = d.header("1")
 	m2.Header.Cred = syncml.NewBasicCred("u", "p")
-	if _, err := svc.Handle(context.Background(), &mdm.Transport{}, mustEncode(t, m2)); err != nil {
+	if _, err := svc.Handle(context.Background(), verifiedTransport(), mustEncode(t, m2)); err != nil {
 		t.Fatalf("basic auth: %v", err)
 	}
 	// A wrong basic password is rejected.
@@ -392,9 +403,15 @@ func (a basicAuth) Lookup(_ context.Context, deviceID string) (*mdm.Identity, er
 	if deviceID != dev {
 		return nil, mdm.ErrUnenrolled
 	}
-	return &mdm.Identity{DeviceID: dev, EnrollmentKey: "1", AuthType: mdm.AuthBasic, BasicUsername: a.user, BasicPassword: a.pass}, nil
+	hash, err := mdm.HashBasicCredential(a.user, a.pass)
+	if err != nil {
+		return nil, err
+	}
+	return &mdm.Identity{DeviceID: dev, EnrollmentKey: "1", AuthType: mdm.AuthBasic, CredentialHash: hash}, nil
 }
-func (a basicAuth) TrustCertificate(context.Context, *mdm.Identity, []*x509.Certificate) bool { return false }
+func (a basicAuth) TrustCertificate(context.Context, *mdm.Identity, [][]*x509.Certificate) bool {
+	return false
+}
 
 func mustEncode(t *testing.T, m *syncml.Message) []byte {
 	t.Helper()
@@ -407,7 +424,7 @@ func mustEncode(t *testing.T, m *syncml.Message) []byte {
 
 func mustHandle(t *testing.T, svc *mdm.Service, m *syncml.Message) *syncml.Message {
 	t.Helper()
-	out, err := svc.Handle(context.Background(), &mdm.Transport{}, mustEncode(t, m))
+	out, err := svc.Handle(context.Background(), verifiedTransport(), mustEncode(t, m))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -439,7 +456,7 @@ func TestEngineHookErrors(t *testing.T) {
 		hooks failHooks
 		alert syncml.Command
 	}{
-		"package one": {hooks: failHooks{onPkg: boom}},
+		"package one":  {hooks: failHooks{onPkg: boom}},
 		"client event": {hooks: failHooks{onEvent: boom}, alert: custom},
 		"generic":      {hooks: failHooks{onGeneric: boom}, alert: unenroll},
 		"unenrolled":   {hooks: failHooks{onUnenroll: boom}, alert: unenroll},
@@ -454,7 +471,7 @@ func TestEngineHookErrors(t *testing.T) {
 				extra = append(extra, tc.alert)
 			}
 			body, _ := syncml.Encode(d.pkgOne("1", syncml.LoginStatusUser, extra...), syncml.EncodeOptions{})
-			if _, err := svc.Handle(context.Background(), &mdm.Transport{}, body); !errors.Is(err, boom) {
+			if _, err := svc.Handle(context.Background(), verifiedTransport(), body); !errors.Is(err, boom) {
 				t.Errorf("%s: err = %v", name, err)
 			}
 		})

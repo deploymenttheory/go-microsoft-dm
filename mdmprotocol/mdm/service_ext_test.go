@@ -27,7 +27,9 @@ func (f fakeAuth) Lookup(_ context.Context, deviceID string) (*mdm.Identity, err
 	return &mdm.Identity{DeviceID: dev, EnrollmentKey: "1", AuthType: f.authType}, nil
 }
 
-func (f fakeAuth) TrustCertificate(context.Context, *mdm.Identity, []*x509.Certificate) bool { return true }
+func (f fakeAuth) TrustCertificate(context.Context, *mdm.Identity, [][]*x509.Certificate) bool {
+	return f.authType == mdm.AuthCertificate
+}
 
 func newService(t testing.TB) *mdm.Service {
 	t.Helper()
@@ -69,7 +71,7 @@ func TestHandleNewConfig(t *testing.T) {
 func TestHandleFirstSessionSucceeds(t *testing.T) {
 	t.Parallel()
 	svc := newService(t)
-	out, err := svc.Handle(context.Background(), &mdm.Transport{Certificates: []*x509.Certificate{}}, []byte(packageOne("1", "1")))
+	out, err := svc.Handle(context.Background(), verifiedTransport(), []byte(packageOne("1", "1")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +92,7 @@ func TestHandleRejects(t *testing.T) {
 	t.Parallel()
 	svc := newService(t)
 	ctx := context.Background()
-	tr := &mdm.Transport{}
+	tr := verifiedTransport()
 
 	// New session must open with MsgID 1.
 	if _, err := svc.Handle(ctx, tr, []byte(packageOne("1", "2"))); !errors.Is(err, syncml.ErrInvalid) {
@@ -126,7 +128,7 @@ func TestHandleMidSessionSequence(t *testing.T) {
 	t.Parallel()
 	svc := newService(t)
 	ctx := context.Background()
-	tr := &mdm.Transport{}
+	tr := verifiedTransport()
 	if _, err := svc.Handle(ctx, tr, []byte(packageOne("1", "1"))); err != nil {
 		t.Fatal(err)
 	}
@@ -144,3 +146,10 @@ func TestHandleMidSessionSequence(t *testing.T) {
 }
 
 func timeDate() (t timeT) { return t0Value }
+
+// verifiedTransport supplies trusted transport evidence to tests of session
+// behavior. TLS verification itself is exercised with real simulator handshakes.
+func verifiedTransport() *mdm.Transport {
+	leaf := &x509.Certificate{Raw: []byte("verified test leaf")}
+	return &mdm.Transport{Certificates: []*x509.Certificate{leaf}, VerifiedChains: [][]*x509.Certificate{{leaf}}}
+}

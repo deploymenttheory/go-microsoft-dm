@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/x509"
 	"errors"
-	"strings"
 
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/mdm"
+	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/wapprov"
 )
 
 // MDMCredential is the application-layer credential a device uses in an OMA
@@ -15,11 +15,9 @@ import (
 type MDMCredential struct {
 	DeviceID string
 	AuthType mdm.AuthType
-	// CredentialHash is H(username:password) for AuthDigest.
+	// CredentialHash is H(username:password) for AuthDigest, or the salted
+	// verifier returned by mdm.HashBasicCredential for AuthBasic.
 	CredentialHash []byte
-	// BasicUsername and BasicPassword back AuthBasic.
-	BasicUsername string
-	BasicPassword string
 }
 
 // CredentialStore keeps the OMA DM session credential per device.
@@ -37,10 +35,11 @@ type CredentialStore interface {
 type MDMAuthenticator struct {
 	Enrollments EnrollmentStore
 	Credentials CredentialStore
-	// TrustCert reports whether a peer certificate belongs to the
-	// enrollment; nil uses the default (the subject common name contains
-	// the DeviceID, as the enrollment CSR named it).
-	TrustCert func(id *mdm.Identity, certs []*x509.Certificate) bool
+	// TrustCert optionally replaces the enrollment binding policy for
+	// verified TLS chains. Nil requires both the stored serial and thumbprint
+	// to match the leaf. The engine enforces TLS verification before calling
+	// this policy; it cannot opt unverified certificates into authentication.
+	TrustCert func(id *mdm.Identity, verifiedChains [][]*x509.Certificate) bool
 }
 
 var _ mdm.Authenticator = (*MDMAuthenticator)(nil)
@@ -54,12 +53,13 @@ func (a *MDMAuthenticator) Lookup(ctx context.Context, deviceID string) (*mdm.Id
 		}
 		return nil, err
 	}
-	id := &mdm.Identity{DeviceID: e.DeviceID, EnrollmentKey: e.Serial, AuthType: mdm.AuthCertificate}
+	id := &mdm.Identity{
+		DeviceID: e.DeviceID, EnrollmentKey: e.Serial, CertificateThumbprint: e.Thumbprint, AuthType: mdm.AuthCertificate,
+	}
 	if a.Credentials != nil {
 		if c, err := a.Credentials.MDMCredential(ctx, deviceID); err == nil {
 			id.AuthType = c.AuthType
 			id.CredentialHash = c.CredentialHash
-			id.BasicUsername, id.BasicPassword = c.BasicUsername, c.BasicPassword
 		} else if !errors.Is(err, ErrNotFound) {
 			return nil, err
 		}
@@ -68,12 +68,23 @@ func (a *MDMAuthenticator) Lookup(ctx context.Context, deviceID string) (*mdm.Id
 }
 
 // TrustCertificate implements mdm.Authenticator.
-func (a *MDMAuthenticator) TrustCertificate(_ context.Context, id *mdm.Identity, certs []*x509.Certificate) bool {
-	if a.TrustCert != nil {
-		return a.TrustCert(id, certs)
+func (a *MDMAuthenticator) TrustCertificate(_ context.Context, id *mdm.Identity, verifiedChains [][]*x509.Certificate) bool {
+	if id == nil || len(verifiedChains) == 0 {
+		return false
 	}
-	for _, c := range certs {
-		if id.DeviceID != "" && strings.Contains(c.Subject.CommonName, id.DeviceID) {
+	if a.TrustCert != nil {
+		return a.TrustCert(id, verifiedChains)
+	}
+	if id.EnrollmentKey == "" || id.CertificateThumbprint == "" {
+		return false
+	}
+	for _, chain := range verifiedChains {
+		if len(chain) == 0 || chain[0] == nil {
+			continue
+		}
+		c := chain[0]
+		if c.SerialNumber != nil && len(c.Raw) > 0 && c.SerialNumber.String() == id.EnrollmentKey &&
+			wapprov.Thumbprint(c.Raw) == id.CertificateThumbprint {
 			return true
 		}
 	}

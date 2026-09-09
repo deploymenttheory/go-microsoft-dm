@@ -17,6 +17,7 @@ import (
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/enroll"
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/mdm"
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/syncml"
+	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/wapprov"
 	"github.com/deploymenttheory/go-microsoft-dm/schema/registry"
 	"github.com/deploymenttheory/go-microsoft-dm/simulator"
 	"github.com/deploymenttheory/go-microsoft-dm/storage"
@@ -68,6 +69,11 @@ func (h *recordHooks) Unenrolled(_ context.Context, d string) error {
 
 func newHarness(t *testing.T, useTLS bool, auth mdm.AuthType) *harness {
 	t.Helper()
+	return newHarnessClientAuth(t, useTLS, auth, tls.VerifyClientCertIfGiven)
+}
+
+func newHarnessClientAuth(t *testing.T, useTLS bool, auth mdm.AuthType, clientAuth tls.ClientAuthType) *harness {
+	t.Helper()
 	store := inmem.New()
 	queue := inmem.NewQueue()
 	hooks := &recordHooks{}
@@ -102,7 +108,7 @@ func newHarness(t *testing.T, useTLS bool, auth mdm.AuthType) *harness {
 	handler.Log = func(_ string, err error) { h.errs = append(h.errs, err) }
 	if useTLS {
 		h.srv = httptest.NewUnstartedServer(handler)
-		h.srv.TLS = &tls.Config{ClientAuth: tls.RequestClientCert, MinVersion: tls.VersionTLS12} //nolint:gosec // test server
+		h.srv.TLS = &tls.Config{ClientAuth: clientAuth, ClientCAs: ca.Pool(), MinVersion: tls.VersionTLS12} //nolint:gosec // test server
 		h.srv.StartTLS()
 	} else {
 		h.srv = httptest.NewServer(handler)
@@ -115,8 +121,14 @@ func newHarness(t *testing.T, useTLS bool, auth mdm.AuthType) *harness {
 // certificate to the mTLS harness.
 func (h *harness) clientCert(t *testing.T) *http.Client {
 	t.Helper()
-	id, err := h.ca.IssueWithKey(deviceID, t0, mustKey(t))
+	id, err := h.ca.IssueWithKey(deviceID, time.Now().Add(-time.Minute), mustKey(t))
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.store.Create(context.Background(), &storage.Enrollment{
+		Serial: id.Cert.SerialNumber.String(), Thumbprint: wapprov.Thumbprint(id.Cert.Raw), DeviceID: deviceID,
+		EnrollmentType: enroll.EnrollmentTypeFull, EnrolledAt: t0,
+	}); err != nil {
 		t.Fatal(err)
 	}
 	certPEM, keyPEM, err := id.PEM()
@@ -442,5 +454,19 @@ func TestSessionChunkedUpload(t *testing.T) {
 	}
 	if v := got.Result.Items[0].Data.Text(); v != big {
 		t.Errorf("server reassembled %d bytes, want %d", len(v), len(big))
+	}
+}
+
+func TestUnverifiedCertificateStillRequiresDigest(t *testing.T) {
+	t.Parallel()
+	h := newHarnessClientAuth(t, true, mdm.AuthDigest, tls.RequestClientCert)
+	c := h.device(mdm.AuthDigest)
+	c.HTTP = h.clientCert(t)
+	tr, err := c.RunSession(context.Background(), "1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tr.Challenged != 1 || !tr.Ended {
+		t.Fatalf("digest fallback: challenged %d, ended %v", tr.Challenged, tr.Ended)
 	}
 }

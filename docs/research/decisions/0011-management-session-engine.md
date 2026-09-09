@@ -23,17 +23,33 @@ and must be package 1 (a 1200 or 1201 alert and the DevInfo Replace); a message 
 session must carry the next client MsgID. The server's own MsgID starts at 1 and increments per
 reply. The reply answers the SyncHdr first, then every command the client sent.
 
-Authentication runs per session and is remembered once it succeeds. A TLS client certificate
-that belongs to the enrollment authenticates the whole session (MS-MDM 1.3.1, transport
-client-certificate authentication); the default match is a subject common name containing the
-DeviceID, which is how the enrollment CSR named it, and a deployment can pin the exact
-certificate. Otherwise the SyncHdr `Cred` is verified: `syncml:auth-md5` against the stored
-credential hash and a nonce the engine issued (a bounded record in the Phase 1 `state` store,
-renewed every session as MS-MDM requires, base64 on the wire and raw bytes in the hash),
-or `syncml:auth-basic` when the account was provisioned that way and the deployment opted in.
-A missing or wrong credential is answered with a Status 407 or 401 on the SyncHdr carrying a
-`Chal` with a fresh nonce and no commands; the client reverts to package 1 with the credential
-(OMA DM Security 9). Success needs no repeat challenge for the rest of the session.
+Application-layer authentication is remembered once it succeeds within a session. TLS
+certificate authentication is checked on every request, including when a session continues on a
+new connection. `Transport.VerifiedChains` comes from Go's TLS connection state; only chains
+whose leaf equals the current peer reach `Authenticator.TrustCertificate`. The listener must
+use `tls.VerifyClientCertIfGiven` or `tls.RequireAndVerifyClientCert` with `ClientCAs` containing
+only enrollment CA roots. `RequestClientCert` does not establish certificate trust. The default
+storage authenticator matches both the leaf's serial and SHA-1 thumbprint to the active
+enrollment. The thumbprint is an additional binding of an already verified certificate, using
+the enrollment store's existing Windows-compatible identifier. Common names and intermediate
+certificates are not identity evidence. A custom binding policy may replace the default, but
+cannot accept unverified peers; a rejection is final.
+
+Otherwise the SyncHdr `Cred` is verified: `syncml:auth-md5` against the stored credential hash
+and a nonce the engine issued (a bounded record in the `state` store, renewed every session as
+MS-MDM requires, base64 on the wire and raw bytes in the hash), or `syncml:auth-basic` when the
+account was provisioned that way and the deployment opted in. Basic uses
+`mdm.HashBasicCredential` to store a versioned PBKDF2-HMAC-SHA256 verifier of `username:password`
+with a random 16-byte salt, 600,000 iterations and a 32-byte derived key. Verification compares
+fixed-size derived keys with `subtle.ConstantTimeCompare`. `Identity` and `MDMCredential` contain
+only `CredentialHash`; neither stores plaintext Basic credentials. Missing or malformed
+verifiers fail closed. A missing or wrong wire credential receives Status 407 or 401 on the
+SyncHdr with a `Chal` and no commands. Unverified certificates can still accompany valid
+application-layer credentials.
+
+This binding and password-storage policy is project policy. MS-MDM supplies the transport
+certificate authentication option and the OMA DM credential formats. The reference server
+currently requests no client certificate and provisions MD5 credentials; these defaults remain.
 
 Package 1 facts (the DevInfo leaves, the LoginStatus, the AVD SyncType and DevicePrepSync
 alerts) are recorded on the session and handed to a `PackageOne` hook once. On the first
@@ -67,7 +83,11 @@ storage-neutral and let the same code run in tests against in-memory backends an
 6 server against SQL. Recording facts and routing alerts to hooks rather than acting on them
 keeps policy out of the protocol layer. Answering a certificate-authenticated session without a
 challenge, and challenging only when there is no trusted certificate and no valid credential,
-matches what a real Windows client expects and what Fleet's trust check does. Reading the
+matches the Windows authentication flow. The pinned Fleet `isTrustedRequest` checks whether
+a peer CN contains the DeviceID without binding it to the stored enrollment certificate; this
+project requires verified chains and exact enrollment binding. The pinned local-mdm
+`HandleSyncML` acknowledges the header and resolves the device without authenticating a
+credential in that method, so it supplies no certificate-verification policy to reuse. Reading the
 LoginStatus alert and holding user commands is the fix for the pitfall where user settings sent
 before sign-in fail with 500 or 507 and roll back an Atomic. Treating MS-MDM 1.3.1's "2.1"
 as a typo for 1.2.1 is the only reading consistent with the rest of the document and with every
@@ -98,7 +118,10 @@ mid-session, a SessionID change mid-flight, every hook returning an error, a fai
 store, and an expired nonce. The HTTP handler tests check Content-Length on every reply, no
 chunking, WBXML as 415, malformed as 400, unenrolled as 403, oversize as 413 and GET as 405.
 `FuzzHandle` fuzzes the request path. The `simulator` package enrolls and then runs the same
-scenarios end to end over TLS, including real mTLS.
+scenarios end to end over TLS, including real mTLS with enrollment CA verification. TLS regression tests reject unverified,
+self-signed, expired and wrong-EKU identities, other enrollments sharing a CN, and another CA
+using the same serial. Tests also cover custom rejection, loss of certificate verification
+mid-session, salted Basic verifiers and continued MD5 fallback.
 
 ## References
 
@@ -119,3 +142,22 @@ Reference source identifiers and paths (relative to the named project):
 ## Desktop conformance
 
 Session lookup is additionally bound to EnrollmentKey. A new enrollment may restart SessionID and MsgID at 1; it cannot continue an unfinished session or inherit authentication from the previous enrollment. Unit and server e2e regressions seed old authenticated state and require a fresh challenge.
+
+## Compatibility and upgrade
+
+Custom `Authenticator.TrustCertificate` implementations and `MDMAuthenticator.TrustCert`
+callbacks now receive `[][]*x509.Certificate` verified chains. Direct `Service.Handle` callers
+must supply actual TLS verification evidence in `Transport.VerifiedChains` and the matching
+peer in `Transport.Certificates`; forwarded certificate headers do not establish trust.
+Certificate deployments must configure the TLS verifier with enrollment CA roots. Custom
+identity lookups using the default storage binding must supply `CertificateThumbprint` as well
+as `EnrollmentKey`.
+
+Basic callers replace `BasicUsername`/`BasicPassword` with `CredentialHash` from
+`mdm.HashBasicCredential`. SQL startup migrates legacy rows transactionally and clears the old
+columns; see [0014](0014-sql-storage-backends.md) for operational requirements. Clear credentials
+with both username and password empty have no distinguishable legacy marker and remain invalid;
+reprovision such an account if it is needed.
+
+- Go TLS verification contract: <https://pkg.go.dev/crypto/tls#ConnectionState>
+- Go PBKDF2 implementation: <https://pkg.go.dev/crypto/pbkdf2>
