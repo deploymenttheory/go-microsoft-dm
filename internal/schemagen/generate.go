@@ -2,7 +2,8 @@ package schemagen
 
 import (
 	"bytes"
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"errors"
 	"fmt"
 	"os"
@@ -90,7 +91,7 @@ func render(drop *Drop, b Bundle) (Files, error) {
 	// generated code has no import beyond csp.
 	sort.Strings(lock)
 	files["EXPORTED_IDENTIFIERS.lock"] = []byte(strings.Join(lock, "\n") + "\n")
-	js, err := json.MarshalIndent(gf, "", "  ")
+	js, err := json.Marshal(gf, jsontext.WithIndent("  "))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrGenerate, err)
 	}

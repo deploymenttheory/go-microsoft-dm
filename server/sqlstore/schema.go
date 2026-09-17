@@ -114,6 +114,12 @@ func (s *conn) tables() []string {
 			dead BIGINT NOT NULL,
 			push_status TEXT NOT NULL
 		)`,
+		`CREATE TABLE IF NOT EXISTS agent_tokens (
+			device_id VARCHAR(255) PRIMARY KEY,
+			serial VARCHAR(255) NOT NULL,
+			token_hash VARCHAR(64) NOT NULL,
+			created_at BIGINT NOT NULL
+		)`,
 		`CREATE TABLE IF NOT EXISTS events (
 			id ` + s.d.autoID + `,
 			device_id VARCHAR(255) NOT NULL,

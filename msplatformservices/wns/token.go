@@ -2,12 +2,14 @@ package wns
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -88,11 +90,12 @@ func (s *OAuthSource) Token(ctx context.Context, refresh bool) (string, error) {
 		return "", fmt.Errorf("wns: token endpoint returned HTTP %d", resp.StatusCode)
 	}
 	var wire struct {
-		AccessToken string      `json:"access_token"`
-		TokenType   string      `json:"token_type"`
-		ExpiresIn   json.Number `json:"expires_in"`
+		AccessToken string         `json:"access_token"`
+		TokenType   string         `json:"token_type"`
+		ExpiresIn   jsontext.Value `json:"expires_in"`
 	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&wire); err != nil {
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil || json.Unmarshal(data, &wire) != nil {
 		return "", errors.New("wns: invalid token response")
 	}
 	if wire.AccessToken == "" || strings.ContainsAny(wire.AccessToken, "\r\n") || !strings.EqualFold(wire.TokenType, "bearer") {
@@ -101,8 +104,8 @@ func (s *OAuthSource) Token(ctx context.Context, refresh bool) (string, error) {
 	// Some legacy responses omit expires_in. Use that token once, without
 	// inventing a lifetime; a subsequent call obtains a fresh token.
 	lifetime := time.Duration(0)
-	if wire.ExpiresIn != "" {
-		seconds, err := wire.ExpiresIn.Int64()
+	if len(wire.ExpiresIn) != 0 && string(wire.ExpiresIn) != "null" {
+		seconds, err := strconv.ParseInt(strings.Trim(string(wire.ExpiresIn), `"`), 10, 64)
 		if err != nil || seconds <= 0 || seconds > int64((1<<63-1)/time.Second) {
 			return "", errors.New("wns: invalid token lifetime")
 		}

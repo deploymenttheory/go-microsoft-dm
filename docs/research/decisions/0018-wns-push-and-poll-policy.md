@@ -52,11 +52,32 @@ reenrollment isolation. The simulator receives a test push by initiating a real
 authenticated session against the reference application and acknowledging work.
 
 The [Windows procedure](../../testing/windows-wns-push.md) uses the local desktop.
-No WNS credentials were available during implementation, so real delivery and
-the interpretation of Event 4603 remain unverified. The native test skips
-explicitly without credentials; it does not substitute simulator success for
-native evidence. No VM or Windows service configuration change is required by
-the automated suites.
+The headed Windows 11 VM enrolled with the Partner Center PFN.
+Native Push/Status was 0, the server captured a channel, and a queued Get
+completed in an authenticated session. The first credentialed push did not
+reach delivery: `login.live.com/accesstoken.srf` returned HTTP 400. A direct
+guest request reported `invalid_request` and stated that client credential
+flows against `login.live.com` are no longer supported for new clients. The
+bare Package SID returned `invalid_client`. The Partner Center linked app
+registration is Microsoft account only. Its newly created secret reached the
+tenant-specific Entra endpoint, which returned `AADSTS9002346` and required
+`/consumers`; `/consumers` then returned `AADSTS9002332` because the WNS
+resource accepts Azure Active Directory users only. No token was issued.
+The separate Entra token source remains unverified against this DMClient
+channel; its Windows App SDK scope does not establish compatibility. A
+supported credential migration or Partner Center repair needs confirmation
+before further native delivery testing. Event 4603 and push-attributable
+session arrival remain unverified. The native test skips explicitly without
+credentials; it does not substitute simulator success for native evidence.
+No VM or Windows service configuration change is required by automated suites.
+
+A controlled audience test of the Partner Center linked app
+registration also failed at Azure manifest validation. The portal rejected
+`AzureADandPersonalMicrosoftAccount` because its `ms-app://<Package SID>`
+identifier URI did not use a verified organizational domain. The unsaved edit
+was discarded; the registration retained `PersonalMicrosoftAccount`. Changing
+the Store identifier URI is outside this experiment because it may alter the
+identity bound to the existing DMClient channel.
 
 ## References
 
@@ -66,5 +87,5 @@ the automated suites.
 - [Windows App SDK push authentication](https://learn.microsoft.com/en-us/windows/apps/develop/notifications/push-notifications/push-quickstart)
 - Pinned `third_party/ddf` DMClient definition and generated `schema/csp/dmclient`.
 
-Microsoft references checked 2026-09-08. Phase 7 established the zero-retry
+Phase 7 established the zero-retry
 unbounded schedule on 26200.9278; it did not change the production poll defaults.

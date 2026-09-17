@@ -6,7 +6,8 @@ package main
 import (
 	"bufio"
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"errors"
 	"fmt"
 	"os"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/deploymenttheory/go-microsoft-dm/mdmprotocol/mdm"
 	"github.com/deploymenttheory/go-microsoft-dm/paging"
+	"github.com/deploymenttheory/go-microsoft-dm/server/agent/enroll"
 	"github.com/deploymenttheory/go-microsoft-dm/server/internal/app"
 	"github.com/deploymenttheory/go-microsoft-dm/server/pushnotify"
 	"github.com/deploymenttheory/go-microsoft-dm/server/sqlstore"
@@ -33,6 +35,7 @@ const usage = `usage: dmctl <command> [args]
 commands:
 	push <deviceID>             request a management session through WNS
 	push-state <deviceID>       show channel age/status and last check-in (no URI)
+	agent-token <deviceID>      rotate and print a device agent token once
 	checkins <max-age>          log missing check-ins (duration, e.g. 24h)
   enrollments                 list enrollments
   facts <deviceID>            show a device's reported facts
@@ -69,6 +72,15 @@ func run(args []string) error {
 	defer func() { _ = store.Close() }()
 
 	switch args[0] {
+	case "agent-token":
+		return withDevice(args, func(id string) error {
+			token, err := enroll.Issue(ctx, store, id)
+			if err != nil {
+				return err
+			}
+			fmt.Println(token)
+			return nil
+		})
 	case "push-state":
 		return withDevice(args, func(id string) error {
 			e, err := store.Get(ctx, id)
@@ -79,7 +91,7 @@ func run(args []string) error {
 			if err != nil && !errors.Is(err, sqlstore.ErrNotFound) {
 				return err
 			}
-			return json.NewEncoder(os.Stdout).Encode(struct {
+			return writeJSON(struct {
 				LastSeen   time.Time            `json:"last_seen"`
 				Channel    sqlstore.PushChannel `json:"channel"`
 				HasChannel bool                 `json:"has_channel"`
@@ -99,7 +111,7 @@ func run(args []string) error {
 			if err != nil {
 				return err
 			}
-			return json.NewEncoder(os.Stdout).Encode(result)
+			return writeJSON(result)
 		})
 	case "checkins":
 		if len(args) != 2 {
@@ -113,7 +125,7 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		return json.NewEncoder(os.Stdout).Encode(alerts)
+		return writeJSON(alerts)
 	case "enrollments":
 		return listEnrollments(ctx, store)
 	case "facts":
@@ -141,6 +153,15 @@ func withDevice(args []string, fn func(string) error) error {
 	return fn(args[1])
 }
 
+func writeJSON(v any) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(os.Stdout, string(b))
+	return err
+}
+
 func listEnrollments(ctx context.Context, store *sqlstore.Store) error {
 	res, err := store.List(ctx, storage.EnrollmentQuery{}, paging.Page{Limit: paging.MaxPageSize})
 	if err != nil {
@@ -162,7 +183,7 @@ func showFacts(ctx context.Context, store *sqlstore.Store, deviceID string) erro
 	if err != nil {
 		return err
 	}
-	b, _ := json.MarshalIndent(f, "", "  ")
+	b, _ := json.Marshal(f, jsontext.WithIndent("  "))
 	fmt.Println(string(b))
 	return nil
 }

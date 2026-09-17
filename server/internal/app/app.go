@@ -9,6 +9,7 @@ import (
 	"github.com/deploymenttheory/go-microsoft-dm/clock"
 	"github.com/deploymenttheory/go-microsoft-dm/pki/ca"
 	"github.com/deploymenttheory/go-microsoft-dm/schema/registry"
+	"github.com/deploymenttheory/go-microsoft-dm/server/agent/wake"
 	"github.com/deploymenttheory/go-microsoft-dm/server/httpapi"
 	"github.com/deploymenttheory/go-microsoft-dm/server/pushnotify"
 	"github.com/deploymenttheory/go-microsoft-dm/server/service"
@@ -92,6 +93,9 @@ func New(ctx context.Context, cfg Config, opts Options) (*App, error) {
 	}
 	h := httpapi.New(svc)
 	h.Log = opts.Log
+	routes := http.NewServeMux()
+	routes.Handle("/agent/wake", wake.Handler(store))
+	routes.Handle("/", h)
 	sender, err := cfg.Push.PushSender()
 	if err != nil {
 		_ = store.Close()
@@ -103,7 +107,7 @@ func New(ctx context.Context, cfg Config, opts Options) (*App, error) {
 	}
 	return &App{
 		Push:    push,
-		Handler: h, Service: svc, Store: store, CA: authority, Config: cfg,
+		Handler: routes, Service: svc, Store: store, CA: authority, Config: cfg,
 		closers: []func() error{store.Close},
 	}, nil
 }

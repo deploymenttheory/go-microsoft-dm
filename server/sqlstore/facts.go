@@ -3,7 +3,8 @@ package sqlstore
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"errors"
 	"fmt"
 	"time"
@@ -71,7 +72,7 @@ type Event struct {
 	ID       int64
 	DeviceID string
 	Kind     string
-	Detail   json.RawMessage
+	Detail   jsontext.Value
 	At       time.Time
 }
 

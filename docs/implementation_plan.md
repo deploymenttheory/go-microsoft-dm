@@ -36,8 +36,8 @@ to this plan too: fix the plan, cite the date.
 | 4 | Enrollment: MS-MDE2 with XCEP and WSTEP | done (2026-09-07) | OnPremise only; PKCS#7 and Renew refused with `NotEligibleToRenew` until Phase 9; records 0008 to 0010 |
 | 5 | Management session: MS-MDM over SyncML | done (2026-09-07) | Packages 1 to 4, MD5 and mTLS auth, scope gating, chunking, unenroll; records 0011 to 0013 |
 | 6 | Reference server, SQL storage and simulator end-to-end | done (2026-09-08) | `dmserver` and `dmctl`; sqlite, postgres, mysql via pure-Go drivers; contract suite plus e2e scenarios; records 0014 to 0016; Dockerfile builds `dmserver` |
-| 7 | Real-client conformance on guestweave | not started | Settles open questions 1, 2, 4, 5, 6, 9 |
-| 8 | WNS push and the poll schedule | not started | |
+| 7 | Real-client conformance on the Windows desktop | done (2026-09-08) | Native 25H2 findings and limits in the conformance guide and record 0017; Event 4603 continues in Phase 8 |
+| 8 | WNS push and the poll schedule | blocked on WNS identity | Implementation and offline tests complete; native channel captured, but current Microsoft token endpoints reject the Partner Center identity |
 | 9 | Certificate lifecycle: ROBO renewal, SCEP, PFX | not started | |
 | 10 | Entra identity paths, Terms of Use, Graph | not started | |
 | 11 | Enrollment attestation | not started | |
@@ -607,9 +607,20 @@ Implementation: token sources, raw sender, response handling, optional PFN
 provisioning, per-session channel/status reads, enrollment-bound channel storage,
 `dmctl push`/`push-state`/`checkins`, simulator coverage and desktop test scripts
 are implemented. See [ADR 0018](research/decisions/0018-wns-push-and-poll-policy.md)
-and [Windows WNS validation](testing/windows-wns-push.md). Native push delivery
-and Event 4603 remain unverified until matching WNS credentials are configured;
-the native test skips explicitly when they are absent.
+and [Windows WNS validation](testing/windows-wns-push.md). Native enrollment
+captured a WNS channel, but the legacy token endpoint rejected
+new client credentials and the Partner Center linked Microsoft-account-only
+registration could not obtain an Entra WNS token. Native push delivery and
+Event 4603 remain unverified pending a supported identity path. The native
+test skips explicitly when credentials are absent. A controlled attempt to
+change the linked registration to an organizational and personal account
+audience was rejected because its Store `ms-app://<Package SID>` identifier URI
+did not satisfy Azure's verified-domain rule; the edit was discarded. The
+optional [agent wake workflow](testing/windows-agent-wake.md) uses an
+enrollment-bound token, a lightweight HTTPS poll and a local OMA-DM trigger.
+The headed VM completed queued read-only Gets through this path, including
+one delivered by the installed SYSTEM task. It provides a working alternative
+delivery path while WNS identity remains unresolved.
 
 Goal: wake a device on demand without an agent, and make the polling schedule sane.
 

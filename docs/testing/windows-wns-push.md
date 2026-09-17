@@ -5,6 +5,15 @@ All device work targets the local test enrollment. Set the WNS environment
 before `Start` so both enrollment provisioning and `dmctl` use the same identity.
 Keep secrets in the process environment or a private local credential loader.
 
+For an isolated guestweave Windows test, use a headed Windows 11 VM with a NAT
+NIC for WNS and a host-only NIC for host access. `weave net check <vm>` must
+confirm the guest's NAT address and default route before enrollment. Install
+PowerShell 7 and Go 1.27 in the guest, and run the repository, test server,
+`dmctl` and the scripts below **inside the guest**: the native harness binds
+`https://localhost:8443`, which means localhost must be the enrolled device.
+Set the WNS environment in the guest session before `Start` and retain that
+same identity for `Push` and `test-push.ps1`.
+
 | Variable | Meaning |
 |---|---|
 | DM_WNS_PFN | Package family name provisioned under DMClient/Provider/Push/PFN. |
@@ -19,6 +28,27 @@ implemented separately for the plan's alternate flow and is not native DMClient
 compatibility evidence. PFN alone can be configured to test channel registration
 without enabling server-side delivery. With no WNS configuration, enrollment
 and polling retain their existing behavior.
+
+To obtain the legacy identity, register for the Windows developer program in
+Partner Center, create an MSIX or PWA app under Apps and games, and reserve its
+name. Product Identity shows the PFN and Package SID. Open that product's
+WNS/MPNS App Registration portal to create the matching client secret; an
+unrelated Entra app registration does not identify the same Store package.
+An EXE or MSI app draft's Partner Center ID is not the Package SID and its
+Application identity panel does not supply the PFN needed by DMClient.
+Follow [Microsoft's MDM push setup](https://learn.microsoft.com/en-us/windows/client-management/push-notification-windows-mdm)
+and [WNS credential walkthrough](https://learn.microsoft.com/en-us/azure/notification-hubs/notification-hubs-windows-store-dotnet-get-started-wns-push-notification).
+
+For the documented MDM flow, set the three values in one guest PowerShell 7
+session before `Start`, and run `Push` or `test-push.ps1` from that session too:
+
+```powershell
+$env:DM_WNS_PFN = '<PFN from Product Identity>'
+$env:DM_WNS_CLIENT_ID = 'ms-app://<Package SID from Product Identity>'
+$env:DM_WNS_CLIENT_SECRET = Read-Host -Prompt 'WNS client secret' -MaskInput
+```
+
+The secret prompt masks input and does not add the value to command history.
 
 1. Run `Setup`, `Start -Capture`, elevated `Trust`, then native `Enroll`/`Submit`.
 2. Complete a management session and inspect `host.ps1 -Action PushState -DeviceID ...`.
@@ -70,6 +100,35 @@ does not establish a fault in a trigger-start service.
 
 Local tests cover both token flows, raw delivery, errors/retries, persistence,
 reenrollment isolation, missed-check-in alerts and a simulator-triggered session.
-Real WNS delivery was skipped because credentials were not configured. Q3
-(which credential flow works with this native DMClient identity) and Q4 (Event
-4603 versus session arrival) therefore remain open for the credentialed run.
+The headed Windows 11 VM enrolled with the Partner Center PFN
+`DeploymentTheory.WeaveDeviceManagement_35ma6q3bna5z2`. Its native session
+reported Push/Status 0 and a ChannelURI, and the server recorded `has_channel`
+true. A queued read-only `./DevInfo/Man` Get completed with status 200.
+The first credentialed native push could not authenticate: the legacy token
+endpoint returned HTTP 400. A separate request from the guest returned
+`invalid_request` with the description "Client credential flows against
+login.live.com are no longer supported. New clients should use
+login.microsoftonline.com instead." The same secret with the bare Package SID
+returned `invalid_client` / "Invalid client id". No WNS delivery occurred.
+The Partner Center linked app registration is Microsoft account only. With its
+Application ID and a newly created secret, the tenant-specific Entra token
+request returned `AADSTS9002346`, directing this client to `/consumers`.
+The `/consumers` request for `https://wns.windows.com/.default` returned
+`AADSTS9002332`: WNS is configured for Azure Active Directory users only.
+The alternate `https://api.wns.windows.com/.default` resource was not found
+in `/consumers`. No token or push was issued. These results are specific to
+the new Store identity and current service state. Microsoft documents Entra
+WNS tokens for Windows App SDK apps, but its channel identity uses the app ID
+instead of a Partner Center PFN; that documentation does not establish a way
+to authenticate this PFN-based DMClient channel. Q3 (which credential flow
+works with this native DMClient identity) and Q4 (Event 4603 versus session
+arrival) remain open.
+
+An attempted change of the Partner Center linked app registration from
+`PersonalMicrosoftAccount` to `AzureADandPersonalMicrosoftAccount` was rejected
+by the Azure manifest editor. It required the registration's `ms-app://<Package
+SID>` identifier URI to use a verified organizational domain or supported
+multitenant format. The change was discarded; the portal again showed the
+original `PersonalMicrosoftAccount` audience. Replacing the Package SID URI
+was not attempted because its Store linkage and DMClient channel semantics
+would need Microsoft confirmation.
