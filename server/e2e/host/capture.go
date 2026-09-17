@@ -7,7 +7,8 @@ package host
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/json"
+	"encoding/json/jsontext"
+	json "encoding/json/v2"
 	"fmt"
 	"io"
 	"net/http"
@@ -70,13 +71,13 @@ func (h *Recorder) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	stamp := time.Now().UTC()
 	stem := fmt.Sprintf("%s-%06d", stamp.Format("20060102T150405.000000000Z"), h.seq.Add(1))
-	meta, _ := json.MarshalIndent(struct {
+	meta, _ := json.Marshal(struct {
 		At         time.Time  `json:"at"`
 		Method     string     `json:"method"`
 		Path       string     `json:"path"`
 		Status     int        `json:"status"`
 		Experiment Experiment `json:"experiment"`
-	}{stamp, r.Method, r.URL.Path, response.Code, exp}, "", "  ")
+	}{stamp, r.Method, r.URL.Path, response.Code, exp}, jsontext.WithIndent("  "))
 	for suffix, data := range map[string][]byte{"request.xml": body, "response.xml": out, "metadata.json": meta} {
 		if err := os.WriteFile(filepath.Join(h.Directory, stem+"-"+suffix), data, 0600); err != nil {
 			http.Error(w, "write capture", http.StatusInternalServerError)

@@ -12,7 +12,7 @@
 
 # Build and temp files
 /build/
-/tmp/
+tmp/
 *.log
 *.bak
 

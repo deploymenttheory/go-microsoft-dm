@@ -78,7 +78,16 @@ func (s *Service) Wake(ctx context.Context, deviceID string) (wns.Result, error)
 		}
 	}
 	// No channel URI, OAuth token or remote error body enters the event log.
-	if err := s.Store.LogEvent(ctx, deviceID, "push", map[string]any{"result": r, "failed": sendErr != nil, "renewal_due": s.now().Sub(c.FirstSeen) >= 15*24*time.Hour}); err != nil {
+	eventResult := struct {
+		HTTPStatus             int
+		Outcome                wns.Outcome
+		NotificationStatus     string
+		DeviceConnectionStatus string
+		MessageID              string
+		CorrelationVector      string
+		RetryAfter             int64
+	}{r.HTTPStatus, r.Outcome, r.NotificationStatus, r.DeviceConnectionStatus, r.MessageID, r.CorrelationVector, int64(r.RetryAfter)}
+	if err := s.Store.LogEvent(ctx, deviceID, "push", map[string]any{"result": eventResult, "failed": sendErr != nil, "renewal_due": s.now().Sub(c.FirstSeen) >= 15*24*time.Hour}); err != nil {
 		return r, errors.Join(sendErr, err)
 	}
 	return r, sendErr

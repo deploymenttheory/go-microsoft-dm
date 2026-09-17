@@ -5,7 +5,7 @@ package main
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
+	json "encoding/json/v2"
 	"flag"
 	"fmt"
 	"os"

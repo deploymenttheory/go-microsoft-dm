@@ -20,14 +20,19 @@ version 26H2 on the shared 24H2 servicing branch (build 26100.x and later).
 
 ## Status
 
-Pre-alpha. Phases 0 to 6 of the [implementation plan](docs/implementation_plan.md) are done:
+Pre-alpha. Phases 0 to 7 of the [implementation plan](docs/implementation_plan.md) are done:
 the workspace, the pinned references, the foundation packages, the SyncML codec, the CSP
 schema generated from Microsoft's DDF v2 bundle, MS-MDE2 enrollment with the on-premises
 authentication policy, the MS-MDM management session engine (OMA DM packages 1 to 4,
 certificate and MD5 authentication, a monotonic command queue with per-command results,
 device- and user-scope gating, large-object chunking, unenrollment, and a software client that
 runs whole sessions against the engine), and a reference server (`dmserver`) with an operator
-CLI (`dmctl`) over persistent SQL storage. The API is pre-1.0 and will change.
+CLI (`dmctl`) over persistent SQL storage. Native Windows 11 25H2 enrollment and management
+were validated in Phase 7. WNS push is implemented, while the linked Store
+identity currently cannot obtain a token for native delivery. The optional
+[Windows agent wake workflow](docs/testing/windows-agent-wake.md) delivers
+queued commands through authenticated polling and a local OMA-DM trigger.
+The API is pre-1.0 and will change.
 
 ## Running the reference server
 
